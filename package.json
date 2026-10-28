@@ -1,0 +1,48 @@
+{
+  "name": "rukba",
+  "version": "1.0.0",
+  "description": "Gaza local transportation management API",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "seed": "node seeds/seed.js",
+    "db:sync": "node scripts/sync-models.js",
+    "smoke": "node scripts/smoke.js",
+    "test": "npm run test:unit && npm run test:e2e",
+    "test:unit": "jest --runInBand",
+    "test:e2e": "playwright test",
+    "test:perf": "playwright test tests/e2e/discovery.perf.spec.js"
+  },
+  "keywords": [
+    "transport",
+    "gaza",
+    "tickets"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cloudinary": "^2.11.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.3",
+    "libphonenumber-js": "^1.13.13",
+    "mongoose": "^9.10.1",
+    "multer": "^2.4.0",
+    "qrcode": "^1.5.4",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "jest": "^30.5.1",
+    "mongodb-memory-server": "^11.2.0",
+    "nodemon": "^3.1.14"
+  }
+}
