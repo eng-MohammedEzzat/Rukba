@@ -1,10 +1,12 @@
 'use strict';
 
 const bcrypt = require('bcryptjs');
+const mongoose = require('mongoose');
 const { User, RefreshToken } = require('../../models');
 const ApiError = require('../../utils/shared/ApiError');
 const env = require('../../config/env');
-const { toPublicUser } = require('../shared/user.service');
+const { toPublicUser, cleanupImageBestEffort } = require('../shared/user.service');
+const { uploadUserImage } = require('../../utils/shared/cloudinary');
 const { normalizePhone } = require('../../utils/auth/phone');
 const { normalizeUsername } = require('../../utils/auth/username');
 const {
@@ -40,7 +42,7 @@ const issueTokenPair=async  (user, meta)=> {
   };
 }
 
-const registerPassenger = async (input, meta)=> {
+const registerPassenger = async (input, meta, imageFile)=> {
   const { phone, username, password, fullName } = input;
   const normalizedPhone = normalizePhone(phone);
   const usernameNormalized = normalizeUsername(username);
@@ -57,15 +59,33 @@ const registerPassenger = async (input, meta)=> {
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
-  const user = await User.create({
-    phone: normalizedPhone,
-    username,
-    usernameNormalized,
-    passwordHash,
-    fullName: fullName || '',
-    role: 'passenger',
-    status: 'active',
-  });
+  const userId = new mongoose.Types.ObjectId();
+
+  let image;
+  if (imageFile) {
+    const uploaded = await uploadUserImage(imageFile.buffer, { userId: String(userId) });
+    image = { url: uploaded.url, publicId: uploaded.publicId };
+  }
+
+  let user;
+  try {
+    user = await User.create({
+      _id: userId,
+      phone: normalizedPhone,
+      username,
+      usernameNormalized,
+      passwordHash,
+      fullName: fullName || '',
+      ...(image && { image }),
+      role: 'passenger',
+      status: 'active',
+    });
+  } catch (err) {
+    if (image) {
+      await cleanupImageBestEffort(image.publicId);
+    }
+    throw err;
+  }
 
   const tokens = await issueTokenPair(user, meta);
   return {

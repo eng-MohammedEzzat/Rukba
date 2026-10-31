@@ -5,6 +5,7 @@ const authController = require('../../../controllers/auth/auth.controller');
 const validate = require('../../../middlewares/shared/validate.middleware');
 const authenticate = require('../../../middlewares/auth/auth.middleware');
 const requireRole = require('../../../middlewares/auth/role.middleware');
+const uploadUserImageMiddleware = require('../../../middlewares/shared/upload.middleware');
 const {
   roleLoginSchema,
   roleRefreshSchema,
@@ -17,7 +18,12 @@ const {
 
 const router = Router();
 router.post('/login', validate(roleLoginSchema), authController.loginRole('driver'));
-router.post('/register', validate(driverRegistrationSchema), authController.registerDriver);
+router.post(
+  '/register',
+  uploadUserImageMiddleware,
+  validate(driverRegistrationSchema),
+  authController.registerDriver
+);
 router.post('/refresh', validate(roleRefreshSchema), authController.refreshRoleSession('driver'));
 router.post('/logout', validate(roleLogoutSchema), authController.logoutRole('driver'));
 router.post(

@@ -40,7 +40,7 @@ function toPublicDriver(user, profile) {
   );
 
   return {
-    user: toUserSummary(user),
+    user: { ...toUserSummary(user), image: user.image },
     profile: profile
       ? {
           id: String(profile._id),

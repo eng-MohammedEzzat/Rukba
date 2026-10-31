@@ -5,6 +5,7 @@ const authController = require('../../../controllers/auth/auth.controller');
 const validate = require('../../../middlewares/shared/validate.middleware');
 const authenticate = require('../../../middlewares/auth/auth.middleware');
 const requireRole = require('../../../middlewares/auth/role.middleware');
+const uploadUserImageMiddleware = require('../../../middlewares/shared/upload.middleware');
 const {
   registerSchema,
   loginSchema,
@@ -14,7 +15,12 @@ const {
 
 const router = Router();
 
-router.post('/register', validate(registerSchema), authController.registerPassenger);
+router.post(
+  '/register',
+  uploadUserImageMiddleware,
+  validate(registerSchema),
+  authController.registerPassenger
+);
 router.post('/login', validate(loginSchema), authController.loginPassenger);
 router.post('/refresh', validate(refreshSchema), authController.refreshPassengerSession);
 router.post('/logout', validate(logoutSchema), authController.logoutPassenger);

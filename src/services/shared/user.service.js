@@ -112,6 +112,7 @@ function toUserSummary(user) {
 }
 
 module.exports = {
+  cleanupImageBestEffort,
   updateProfile,
   toPublicUser,
   toUserSummary,

@@ -9,7 +9,11 @@ const roleAuthService = require('../../services/auth/roleAuth.service');
 const sessionService = require('../../services/auth/session.service');
 
 const registerPassenger = asyncHandler(async (req, res) => {
-  const registration = await authService.registerPassenger(req.body, clientMetadata(req));
+  const registration = await authService.registerPassenger(
+    req.body,
+    clientMetadata(req),
+    req.file
+  );
   return apiResponse(res, {
     statusCode: 201,
     message: 'Registered',
@@ -53,7 +57,7 @@ const logoutAllPassengerSessions = asyncHandler(async (req, res) => {
 });
 
 const registerDriver = asyncHandler(async (req, res) => {
-  const registration = await driverRegistrationService.registerDriver(req.body);
+  const registration = await driverRegistrationService.registerDriver(req.body, req.file);
   return apiResponse(res, {
     statusCode: 201,
     message: 'Driver registered',

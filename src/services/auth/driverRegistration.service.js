@@ -1,8 +1,12 @@
 'use strict';
 
 const bcrypt = require('bcryptjs');
+const mongoose = require('mongoose');
 const { User, DriverProfile } = require('../../models');
+const ApiError = require('../../utils/shared/ApiError');
 const roleApiError = require('../../utils/auth/roleApiError');
+const { cleanupImageBestEffort } = require('../shared/user.service');
+const { uploadUserImage } = require('../../utils/shared/cloudinary');
 const { toPublicDriver } = require('../Driver/driverProfile.service');
 const { normalizePhone } = require('../../utils/auth/phone');
 const { normalizeUsername } = require('../../utils/auth/username');
@@ -22,11 +26,19 @@ const registrationError= (err)=> {
   return err;
 }
 
-const registerDriver=async  (input)=> {
+const registerDriver=async  (input, imageFile)=> {
+  if (!imageFile) {
+    throw new ApiError(400, 'Validation failed', [
+      { path: 'image', message: 'image is required' },
+    ]);
+  }
+
   const phone = normalizePhone(input.phone);
   const usernameNormalized = normalizeUsername(input.username);
   const passwordHash = await bcrypt.hash(input.password, 10);
   const submittedAt = new Date();
+  const userId = new mongoose.Types.ObjectId();
+  const uploaded = await uploadUserImage(imageFile.buffer, { userId: String(userId) });
   let user;
   let profile;
 
@@ -35,11 +47,13 @@ const registerDriver=async  (input)=> {
       [user] = await User.create(
         [
           {
+            _id: userId,
             phone,
             username: input.username,
             usernameNormalized,
             passwordHash,
             fullName: input.fullName,
+            image: { url: uploaded.url, publicId: uploaded.publicId },
             role: 'driver',
             status: 'active',
             isDeleted: false,
@@ -73,6 +87,7 @@ const registerDriver=async  (input)=> {
       );
     });
   } catch (err) {
+    await cleanupImageBestEffort(uploaded.publicId);
     throw registrationError(err);
   }
 
