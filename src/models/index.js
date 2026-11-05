@@ -12,6 +12,8 @@ const Notification = require('./shared/notification.model');
 const SavedRoute = require('./Passenger/savedRoute.model');
 const RefreshToken = require('./auth/refreshToken.model');
 const AuthFailureCounter = require('./auth/authFailureCounter.model');
+const Wallet = require('./wallet/wallet.model');
+const WalletTransaction = require('./wallet/walletTransaction.model');
 
 module.exports = {
   User,
@@ -26,4 +28,6 @@ module.exports = {
   SavedRoute,
   RefreshToken,
   AuthFailureCounter,
+  Wallet,
+  WalletTransaction,
 };

@@ -134,6 +134,7 @@ function ticketJourneySnapshot(ticket, trip) {
     vehicleLabel: journey.vehicleLabel,
     fareMinor: ticket.fareMinor,
     currency: ticket.currency,
+    passengerCount: ticket.passengerCount ?? 1,
     status: ticket.status,
   };
 }

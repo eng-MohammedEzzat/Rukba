@@ -85,6 +85,11 @@ const env = Object.freeze({
     2000,
     'DRIVER_EARNINGS_BUDGET_MS'
   ),
+  walletInitialBalanceMinor: parseNonNegativeInt(
+    process.env.WALLET_INITIAL_BALANCE_MINOR,
+    0,
+    'WALLET_INITIAL_BALANCE_MINOR'
+  ),
 });
 
 module.exports = env;

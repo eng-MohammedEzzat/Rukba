@@ -9,6 +9,7 @@ const objectId = z
 
 const bookTicketSchema = z.object({
   routeId: objectId,
+  passengerCount: z.coerce.number().int().min(1).default(1),
 });
 
 const listTicketsSchema = z.object({

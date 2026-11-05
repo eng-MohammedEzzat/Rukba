@@ -44,6 +44,9 @@ function storedJourneyDisplay(snapshot) {
     vehicleLabel: nullableTrimmedText(snapshot?.vehicleLabel),
     fareMinor: nullableFareMinor(snapshot?.fareMinor),
     currency: typeof snapshot?.currency === 'string' ? snapshot.currency : null,
+    passengerCount: Number.isSafeInteger(snapshot?.passengerCount) && snapshot.passengerCount >= 1
+      ? snapshot.passengerCount
+      : 1,
     status: nullableTrimmedText(snapshot?.status),
   };
 }

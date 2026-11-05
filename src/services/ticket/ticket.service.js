@@ -22,6 +22,7 @@ const {
   ensureNotificationCollection,
 } = require('../shared/notification.service');
 const { runInTransaction } = require('../../utils/shared/runInTransaction');
+const walletService = require('../wallet/wallet.service');
 
 const MAX_CODE_ATTEMPTS = 3;
 const QR_LINK_TTL_SECONDS = 300;
@@ -59,6 +60,14 @@ function assertActiveTicketAccess(ticket, now = new Date()) {
   }
 }
 
+function computeTotalFare(fareMinor, passengerCount) {
+  const total = fareMinor * passengerCount;
+  if (!Number.isSafeInteger(total)) {
+    throw new ApiError(400, 'Passenger count is too large');
+  }
+  return total;
+}
+
 function buildReceiptSnapshot({ ticket, route, passenger }) {
   const display = routeCatalogDisplay(route);
   return {
@@ -69,10 +78,12 @@ function buildReceiptSnapshot({ ticket, route, passenger }) {
     vehicleLabel: null,
     fareMinor: ticket.fareMinor,
     currency: ticket.currency,
+    passengerCount: ticket.passengerCount,
     passengerName: passenger.fullName || null,
     passengerPhone: passenger.phone || null,
     driverName: null,
     paymentStatus: ticket.paymentStatus,
+    paymentMethod: 'wallet',
   };
 }
 
@@ -89,6 +100,7 @@ async function buildSignedQrArtifact({
   ticketCode,
   route,
   passengerId,
+  passengerCount,
 }) {
   const issuedAt = new Date();
   const expiresAt = computeQrDeadline(issuedAt);
@@ -97,7 +109,8 @@ async function buildSignedQrArtifact({
     ticketCode,
     routeId: route._id,
     passengerId,
-    fareMinor: route.defaultFareMinor,
+    fareMinor: computeTotalFare(route.defaultFareMinor, passengerCount),
+    passengerCount,
     currency: route.currency,
     status: 'active',
     issuedAt,
@@ -146,6 +159,7 @@ async function commitBooking({
   session,
   route,
   passenger,
+  passengerCount,
   ticketId,
   ticketCode,
   signed,
@@ -159,7 +173,8 @@ async function commitBooking({
     passenger: passenger._id,
     trip: null,
     route: claimedRoute._id,
-    fareMinor: claimedRoute.defaultFareMinor,
+    fareMinor: computeTotalFare(claimedRoute.defaultFareMinor, passengerCount),
+    passengerCount,
     currency: claimedRoute.currency,
     ticketCode,
     qr: {
@@ -171,7 +186,16 @@ async function commitBooking({
       imagePublicId: uploaded.publicId,
     },
     status: 'active',
-    paymentStatus: 'unpaid',
+    paymentStatus: 'paid',
+  });
+
+  await walletService.debit({
+    userId: passenger._id,
+    ownerRole: 'passenger',
+    amountMinor: ticket.fareMinor,
+    type: 'ticket_payment',
+    refs: { ticket: ticket._id },
+    session,
   });
 
   await recordTicketBooked(session, {
@@ -213,6 +237,7 @@ async function cleanupFailedQrUpload(uploaded) {
 
 async function persistBookingTransaction(params) {
   await ensureNotificationCollection();
+  await walletService.ensureWalletCollections();
   let ticket;
   await runInTransaction(async (session) => {
     ticket = await commitBooking({ ...params, session });
@@ -220,7 +245,7 @@ async function persistBookingTransaction(params) {
   return ticket;
 }
 
-async function attemptOneBooking({ route, passenger }) {
+async function attemptOneBooking({ route, passenger, passengerCount }) {
   const ticketId = new mongoose.Types.ObjectId();
   const ticketCode = generateTicketCode();
   const receiptCode = generateReceiptCode();
@@ -232,12 +257,14 @@ async function attemptOneBooking({ route, passenger }) {
       ticketCode,
       route,
       passengerId: passenger._id,
+      passengerCount,
     });
     uploaded = artifact.uploaded;
 
     const ticket = await persistBookingTransaction({
       route,
       passenger,
+      passengerCount,
       ticketId,
       ticketCode,
       signed: artifact.signed,
@@ -262,12 +289,17 @@ async function attemptOneBooking({ route, passenger }) {
   }
 }
 
-async function bookTicket(passenger, { routeId }) {
+async function bookTicket(passenger, { routeId, passengerCount = 1 }) {
   const route = await loadBookableRoute(routeId);
+  await walletService.assertSufficientBalance(
+    passenger._id,
+    'passenger',
+    computeTotalFare(route.defaultFareMinor, passengerCount)
+  );
   let lastError;
   for (let attempt = 1; attempt <= MAX_CODE_ATTEMPTS; attempt += 1) {
     try {
-      return await attemptOneBooking({ route, passenger });
+      return await attemptOneBooking({ route, passenger, passengerCount });
     } catch (err) {
       if (
         isDuplicateKey(err, 'ticketCode') ||
@@ -377,10 +409,14 @@ function activeTicketCancelFilter(ticketId, passengerId, now) {
   };
 }
 
-async function markTicketCancelled(session, ticketId, passengerId, cancelledAt) {
+async function markTicketCancelled(session, ticketId, passengerId, cancelledAt, { refunded = false } = {}) {
+  const $set = { status: 'cancelled', cancelledAt };
+  if (refunded) {
+    $set.paymentStatus = 'refunded';
+  }
   const updated = await Ticket.findOneAndUpdate(
     activeTicketCancelFilter(ticketId, passengerId, cancelledAt),
-    { $set: { status: 'cancelled', cancelledAt } },
+    { $set },
     { returnDocument: 'after', session }
   );
   if (!updated) {
@@ -441,6 +477,7 @@ async function cancelTicket(passengerId, ticketId) {
 
   assertActiveTicketAccess(ticket);
 
+  await walletService.ensureWalletCollections();
   await runInTransaction(async (session) => {
       const now = new Date();
       const fresh = await Ticket.findOne({
@@ -460,7 +497,18 @@ async function cancelTicket(passengerId, ticketId) {
           await incrementCancelledOnOpenTrip(session, currentTrip);
         }
       }
-      await markTicketCancelled(session, ticketId, passengerId, now);
+      const refunded = fresh.paymentStatus === 'paid';
+      await markTicketCancelled(session, ticketId, passengerId, now, { refunded });
+      if (refunded) {
+        await walletService.credit({
+          userId: passengerId,
+          ownerRole: 'passenger',
+          amountMinor: fresh.fareMinor,
+          type: 'ticket_refund',
+          refs: { ticket: fresh._id, trip: tripId },
+          session,
+        });
+      }
       await recordTicketCancelled(session, {
         passengerId,
         ticketId: fresh._id,
@@ -584,6 +632,7 @@ function toPublicTicket(ticket) {
     route: toPublicRouteSummary(ticket.route),
     fareMinor: ticket.fareMinor,
     currency: ticket.currency,
+    passengerCount: ticket.passengerCount ?? 1,
     status: effectiveTicketStatus(ticket),
     paymentStatus: ticket.paymentStatus,
     qr: {
@@ -637,7 +686,8 @@ function toPublicReceipt({ receiptCode, receipt, ticket, viewedAt }) {
       destination: receipt?.destination ?? null,
       fareMinor: receipt?.fareMinor ?? null,
       currency: receipt?.currency ?? null,
-      paymentMethod: 'cash_to_driver',
+      passengerCount: receipt?.passengerCount ?? 1,
+      paymentMethod: receipt?.paymentMethod ?? 'cash_to_driver',
       paymentStatus: receipt?.paymentStatus ?? null,
       status: ticket ? effectiveTicketStatus(ticket) : null,
     },

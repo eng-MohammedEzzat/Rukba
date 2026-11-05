@@ -9,6 +9,7 @@ const { calculateEarning } = require('../../utils/Driver/earningCalculator');
 const { earningSnapshotsMatch } = require('../../utils/Driver/earningSnapshotsMatch');
 const { createRunFingerprint, lifecycleFingerprint } = require('../../utils/trip/driverTripFingerprint');
 const { routeCatalogDisplay, runJourneyDisplay } = require('../../utils/trip/journeyDisplay');
+const walletService = require('../wallet/wallet.service');
 
 const MAX_SAFE = Number.MAX_SAFE_INTEGER;
 const MAX_COMPLETION_RETRIES = 2;
@@ -207,6 +208,7 @@ async function transitionRun(driverId, tripId, action, operationId) {
   const inputFingerprint = lifecycleFingerprint(rule.actionType, tripId);
   const existing = await findReplay(driverId, operationId, inputFingerprint);
   if (existing) return existing;
+  if (action === 'complete') await walletService.ensureWalletCollections();
   let attempt = 0;
   while (true) {
     try {
@@ -276,6 +278,22 @@ async function incrementCompletedTrips(driverId, session) {
   }
 }
 
+async function creditDriverWallet({ session, driverId, trip, earning, usedTickets }) {
+  let paidMinor = 0;
+  for (const ticket of usedTickets) {
+    if (ticket.paymentStatus === 'paid') paidMinor += ticket.fareMinor;
+  }
+  if (paidMinor <= 0) return;
+  await walletService.credit({
+    userId: driverId,
+    ownerRole: 'driver',
+    amountMinor: paidMinor,
+    type: 'trip_earning',
+    refs: { trip: trip._id, earning: earning._id },
+    session,
+  });
+}
+
 async function transitionInTransaction({ session, driverId, tripId, action,
   rule, operationId, inputFingerprint }) {
   const replay = await findReplay(driverId, operationId, inputFingerprint, session);
@@ -289,7 +307,7 @@ async function transitionInTransaction({ session, driverId, tripId, action,
   let calculation = null;
   if (action === 'complete') {
     const usedTickets = await Ticket.find({ trip: trip._id, status: 'used' })
-      .select('_id fareMinor currency status trip')
+      .select('_id fareMinor currency status trip paymentStatus')
       .session(session)
       .lean();
     calculation = calculateEarning({
@@ -306,8 +324,9 @@ async function transitionInTransaction({ session, driverId, tripId, action,
         }
       } else {
         if (writeBarriers.beforeEarningCreate) await writeBarriers.beforeEarningCreate();
+        let earning;
         try {
-          await Earning.create([{
+          [earning] = await Earning.create([{
             trip: trip._id,
             driver: driverId,
             routeOrigin: trip.routeOrigin,
@@ -329,6 +348,7 @@ async function transitionInTransaction({ session, driverId, tripId, action,
           if (error.code !== 11000) throw error;
           throw conflict('EARNING_CONFLICT', 'An incompatible earning already exists for this trip');
         }
+        await creditDriverWallet({ session, driverId, trip, earning, usedTickets });
       }
     }
   }

@@ -7,6 +7,7 @@ const {
   SCAN_RESULTS,
   CURRENCIES,
   PAYMENT_STATUSES,
+  PAYMENT_METHODS,
 } = require('../../constants/enums');
 
 const scanLocationSchema = new mongoose.Schema(
@@ -73,6 +74,17 @@ const validationResultSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    passengerCount: {
+      type: Number,
+      min: 1,
+      default: null,
+      validate: {
+        validator(value) {
+          return value === null || value === undefined || Number.isSafeInteger(value);
+        },
+        message: 'passengerCount must be an integer',
+      },
+    },
   },
   { _id: false }
 );
@@ -98,6 +110,17 @@ const receiptSchema = new mongoose.Schema(
       enum: CURRENCIES,
       default: 'ILS',
     },
+    passengerCount: {
+      type: Number,
+      min: 1,
+      default: null,
+      validate: {
+        validator(value) {
+          return value === null || value === undefined || Number.isSafeInteger(value);
+        },
+        message: 'passengerCount must be an integer',
+      },
+    },
     passengerName: { type: String, trim: true, default: null },
     passengerPhone: { type: String, trim: true, default: null },
     driverName: { type: String, trim: true, default: null },
@@ -106,6 +129,11 @@ const receiptSchema = new mongoose.Schema(
     paymentStatus: {
       type: String,
       enum: PAYMENT_STATUSES,
+      default: undefined,
+    },
+    paymentMethod: {
+      type: String,
+      enum: PAYMENT_METHODS,
       default: undefined,
     },
     scannedAt: { type: Date, default: null },

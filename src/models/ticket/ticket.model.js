@@ -32,6 +32,17 @@ const qrPayloadSchema = new mongoose.Schema(
       enum: CURRENCIES,
       default: 'ILS',
     },
+    passengerCount: {
+      type: Number,
+      min: 1,
+      default: undefined,
+      validate: {
+        validator(value) {
+          return value === undefined || value === null || Number.isSafeInteger(value);
+        },
+        message: 'passengerCount must be an integer',
+      },
+    },
     status: {
       type: String,
       enum: TICKET_STATUSES,
@@ -101,6 +112,15 @@ const ticketSchema = new mongoose.Schema(
       type: String,
       enum: CURRENCIES,
       default: 'ILS',
+    },
+    passengerCount: {
+      type: Number,
+      default: 1,
+      min: 1,
+      validate: {
+        validator: Number.isSafeInteger,
+        message: 'passengerCount must be an integer',
+      },
     },
     ticketCode: {
       type: String,

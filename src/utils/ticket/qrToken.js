@@ -14,6 +14,7 @@ function buildQrPayload({
   routeId,
   passengerId,
   fareMinor,
+  passengerCount = 1,
   currency,
   status,
   issuedAt,
@@ -25,6 +26,7 @@ function buildQrPayload({
     routeId: String(routeId),
     passengerId: String(passengerId),
     fareMinor,
+    passengerCount,
     currency,
     status,
     issuedAt,
@@ -130,6 +132,10 @@ function verifyPresentedQrToken(token) {
   if (!Number.isInteger(decoded.fareMinor) || decoded.fareMinor < 0) {
     throw invalidQr();
   }
+  const passengerCount = decoded.passengerCount ?? 1;
+  if (!Number.isSafeInteger(passengerCount) || passengerCount < 1) {
+    throw invalidQr();
+  }
 
   const expiresAt = asDate(decoded.expiresAt);
   const issuedAt = asDate(decoded.issuedAt);
@@ -150,6 +156,7 @@ function verifyPresentedQrToken(token) {
     routeId: String(decoded.routeId),
     passengerId: String(decoded.passengerId),
     fareMinor: decoded.fareMinor,
+    passengerCount,
     currency: String(decoded.currency),
     status: String(decoded.status),
     issuedAt,

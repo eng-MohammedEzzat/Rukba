@@ -25,7 +25,24 @@ const TICKET_STATUSES = Object.freeze([
   'expired',
 ]);
 
-const PAYMENT_STATUSES = Object.freeze(['unpaid', 'waived']);
+const PAYMENT_STATUSES = Object.freeze(['unpaid', 'waived', 'paid', 'refunded']);
+
+const PAYMENT_METHODS = Object.freeze(['cash_to_driver', 'wallet']);
+
+const WALLET_OWNER_ROLES = Object.freeze(['passenger', 'driver']);
+
+const WALLET_TRANSACTION_TYPES = Object.freeze([
+  'initial_balance',
+  'top_up',
+  'ticket_payment',
+  'ticket_refund',
+  'trip_earning',
+  'payout',
+]);
+
+const WALLET_DIRECTIONS = Object.freeze(['credit', 'debit']);
+
+const WALLET_PROVIDERS = Object.freeze(['jawwal_pay', 'bank_of_palestine']);
 
 const EARNING_STATUSES = Object.freeze(['accrued', 'paid']);
 
@@ -70,6 +87,11 @@ module.exports = {
   TRIP_STATUSES,
   TICKET_STATUSES,
   PAYMENT_STATUSES,
+  PAYMENT_METHODS,
+  WALLET_OWNER_ROLES,
+  WALLET_TRANSACTION_TYPES,
+  WALLET_DIRECTIONS,
+  WALLET_PROVIDERS,
   EARNING_STATUSES,
   SCAN_RESULTS,
   CURRENCIES,
