@@ -26,7 +26,7 @@ async function loadActiveRoute(routeId) {
   return route;
 }
 
-async function saveRoute(passengerId, routeId) {
+async function saveRoute(passengerId, routeId, { address = null } = {}) {
   const route = await loadActiveRoute(routeId);
   const snapshot = snapshotFromRoute(route);
 
@@ -34,6 +34,7 @@ async function saveRoute(passengerId, routeId) {
     const created = await SavedRoute.create({
       passenger: passengerId,
       route: route._id,
+      address,
       ...snapshot,
     });
     return {
@@ -113,6 +114,7 @@ function toPublicSavedRoute(doc, { routeAvailable = null } = {}) {
   return {
     id: String(doc._id),
     routeId: routeId ? String(routeId) : null,
+    address: doc.address ?? null,
     origin: doc.origin ?? null,
     destination: doc.destination ?? null,
     lineLabel: doc.lineLabel ?? null,

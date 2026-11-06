@@ -201,7 +201,7 @@ All ticket routes below require `Authorization: Bearer <accessToken>` and the pa
 |--------|------|--------|
 | GET | `/api/v1/home` | First-screen payload: public user and active routes |
 | GET | `/api/v1/routes` | Active route catalog (origin/destination picker); passenger-authenticated |
-| POST | `/api/v1/saved-routes` | Save an active Route with `{ "routeId" }`; idempotent if already saved |
+| POST | `/api/v1/saved-routes` | Save an active Route with `{ "routeId", "address"? }` (`address`: optional passenger label, max 120 chars); idempotent if already saved |
 | GET | `/api/v1/saved-routes` | Owner-scoped saved routes; optional `page` / `limit` |
 | DELETE | `/api/v1/saved-routes/:routeId` | Remove a saved Route for the current passenger |
 | GET | `/api/v1/trips/history` | Distinct past trips with a `used` ticket (attribution after validation) |

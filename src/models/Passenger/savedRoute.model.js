@@ -20,6 +20,12 @@ const savedRouteSchema = new mongoose.Schema(
       ref: 'Route',
       required: true,
     },
+    address: {
+      type: String,
+      trim: true,
+      maxlength: 120,
+      default: null,
+    },
     origin: {
       type: String,
       required: true,

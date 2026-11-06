@@ -9,6 +9,7 @@ const objectId = z
 const saveRouteSchema = z
   .object({
     routeId: objectId,
+    address: z.string().trim().min(1).max(120).optional(),
   })
   .strict();
 

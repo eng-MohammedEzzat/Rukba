@@ -5,7 +5,9 @@ const asyncHandler = require('../../utils/shared/asyncHandler');
 const savedRouteService = require('../../services/Passenger/savedRoute.service');
 
 const saveRoute = asyncHandler(async (req, res) => {
-  const result = await savedRouteService.saveRoute(req.user._id, req.body.routeId);
+  const result = await savedRouteService.saveRoute(req.user._id, req.body.routeId, {
+    address: req.body.address,
+  });
   return apiResponse(res, {
     statusCode: result.created ? 201 : 200,
     message: result.created ? 'Route saved' : 'Route already saved',
