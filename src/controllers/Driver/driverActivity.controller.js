@@ -6,7 +6,7 @@ const driverActivityService = require('../../services/Driver/driverActivity.serv
 
 const getActivity = asyncHandler(async (req, res) => {
   const activity = await driverActivityService.getActivity(req.user._id, req.validatedQuery);
-  return apiResponse(res, { message: 'Driver activity retrieved', data: activity });
+  return apiResponse(res, { message: 'تم جلب سجل نشاط السائق', data: activity });
 });
 
 module.exports = { getActivity };

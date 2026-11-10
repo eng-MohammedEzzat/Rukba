@@ -17,7 +17,7 @@ async function updateDriverFullName(userId, fullName) {
     { returnDocument: 'after', runValidators: true }
   );
   if (!user) {
-    throw roleApiError(401, 'Current Driver account is unavailable.', 'INVALID_CREDENTIALS');
+    throw roleApiError(401, 'حساب السائق الحالي غير متاح.', 'INVALID_CREDENTIALS');
   }
   return getDriverProfile(user);
 }

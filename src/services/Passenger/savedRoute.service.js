@@ -21,7 +21,7 @@ function snapshotFromRoute(route) {
 async function loadActiveRoute(routeId) {
   const route = await Route.findOne({ _id: routeId, isActive: true }).lean();
   if (!route) {
-    throw new ApiError(404, 'Route not found', { code: 'ROUTE_NOT_FOUND' });
+    throw new ApiError(404, 'خط السير غير موجود', { code: 'ROUTE_NOT_FOUND' });
   }
   return route;
 }
@@ -97,7 +97,7 @@ async function removeSavedRoute(passengerId, routeId) {
   }).lean();
 
   if (!removed) {
-    throw new ApiError(404, 'Saved route not found', {
+    throw new ApiError(404, 'خط السير المحفوظ غير موجود', {
       code: 'SAVED_ROUTE_NOT_FOUND',
     });
   }

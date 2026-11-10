@@ -56,7 +56,7 @@ async function eligibleInSession(driverId, session) {
   const user = await User.findById(driverId).select('+authRevision').session(session);
   const profile = await DriverProfile.findOne({ user: driverId }).session(session);
   if (!isEligibleDriver(user, profile)) {
-    throw new ApiError(403, 'Driver is not eligible to operate', { code: 'DRIVER_INELIGIBLE' });
+    throw new ApiError(403, 'السائق غير مؤهل للعمل حاليًا', { code: 'DRIVER_INELIGIBLE' });
   }
   return { user, profile };
 }
@@ -66,7 +66,7 @@ async function findReplay(driverId, operationId, inputFingerprint, session) {
   const event = await (session ? query.session(session) : query);
   if (!event) return null;
   if (event.actionType !== 'ticket_used' || event.inputFingerprint !== inputFingerprint) {
-    throw conflict('OPERATION_KEY_REUSED', 'Operation identifier was used for another action');
+    throw conflict('OPERATION_KEY_REUSED', 'معرّف العملية مستخدم لإجراء آخر');
   }
   return toDriverValidationResult(event.validationResult, true);
 }
@@ -118,7 +118,7 @@ function isAlreadyUsed(ticket) {
 }
 
 function alreadyUsedError(display) {
-  return new ApiError(409, 'Ticket has already been used', {
+  return new ApiError(409, 'تم استخدام التذكرة مسبقًا', {
     code: 'TICKET_ALREADY_USED',
     display,
   });
@@ -166,13 +166,13 @@ async function alreadyUsedDisplay(ticketId, session) {
 
 function classifyTicketState(ticket, now) {
   if (ticket.status === 'cancelled' || ticket.cancelledAt) {
-    throw conflict('TICKET_CANCELLED', 'Ticket has been cancelled');
+    throw conflict('TICKET_CANCELLED', 'تم إلغاء هذه التذكرة');
   }
   if (!ticket.qr?.expiresAt || now >= new Date(ticket.qr.expiresAt)) {
-    throw conflict('TICKET_EXPIRED', 'Ticket has expired');
+    throw conflict('TICKET_EXPIRED', 'انتهت صلاحية التذكرة');
   }
   if (ticket.status !== 'active') {
-    throw conflict('TICKET_UNAVAILABLE', 'Ticket is unavailable', 404);
+    throw conflict('TICKET_UNAVAILABLE', 'التذكرة غير متاحة', 404);
   }
 }
 
@@ -198,13 +198,13 @@ async function loadDriverCurrentRun(driverId, session) {
 
 function classifyRunForTicket(run, ticket, driverId) {
   if (!run) {
-    throw conflict('TRIP_STATE_CONFLICT', 'Trip is not open for validation');
+    throw conflict('TRIP_STATE_CONFLICT', 'الرحلة غير متاحة للتحقق من التذاكر');
   }
   if (!isCurrentRunAuthorized(run, driverId)) {
-    throw conflict('TRIP_STATE_CONFLICT', 'Trip is not open for validation');
+    throw conflict('TRIP_STATE_CONFLICT', 'الرحلة غير متاحة للتحقق من التذاكر');
   }
   if (!sameId(run.route, ticket.route)) {
-    throw conflict('WRONG_ROUTE', 'Ticket belongs to another route');
+    throw conflict('WRONG_ROUTE', 'التذكرة تابعة لخط سير آخر');
   }
 }
 
@@ -223,7 +223,7 @@ async function loadPassengerDisplayName(passengerId, session) {
   const passenger = await (session ? query.session(session) : query);
   const displayName = passenger?.fullName?.trim();
   if (!displayName) {
-    throw conflict('TICKET_UNAVAILABLE', 'Ticket is unavailable', 404);
+    throw conflict('TICKET_UNAVAILABLE', 'التذكرة غير متاحة', 404);
   }
   return displayName;
 }
@@ -231,7 +231,7 @@ async function loadPassengerDisplayName(passengerId, session) {
 async function incrementTripUse(session, trip, driverId) {
   if (!Number.isSafeInteger(trip.revision) || trip.revision >= MAX_SAFE ||
     !Number.isSafeInteger(trip.stats?.ticketsUsed) || trip.stats.ticketsUsed >= MAX_SAFE) {
-    throw conflict('VALIDATION_CONFLICT', 'Trip accounting is unavailable');
+    throw conflict('VALIDATION_CONFLICT', 'بيانات حسابات الرحلة غير متوفرة');
   }
   await writeBarriers.beforeTripWrite();
   const updated = await Trip.findOneAndUpdate(
@@ -247,7 +247,7 @@ async function incrementTripUse(session, trip, driverId) {
     { session, returnDocument: 'after' }
   );
   if (!updated) {
-    throw conflict('VALIDATION_CONFLICT', 'Trip changed during validation');
+    throw conflict('VALIDATION_CONFLICT', 'تغيّرت حالة الرحلة أثناء التحقق');
   }
   return updated;
 }
@@ -298,7 +298,7 @@ async function markTicketUsed(session, { ticket, claims, driverId, eventId, used
     { session, returnDocument: 'after' }
   );
   if (!updated) {
-    throw conflict('VALIDATION_CONFLICT', 'Ticket changed during validation');
+    throw conflict('VALIDATION_CONFLICT', 'تغيّرت حالة التذكرة أثناء التحقق');
   }
   return updated;
 }
@@ -315,10 +315,10 @@ async function validateInTransaction({ session, driverId, claims, operationId, i
 
   const ticket = await Ticket.findById(claims.ticketId).session(session);
   if (!ticket) {
-    throw conflict('TICKET_UNAVAILABLE', 'Ticket is unavailable', 404);
+    throw conflict('TICKET_UNAVAILABLE', 'التذكرة غير متاحة', 404);
   }
   if (!claimsMatchTicket(claims, ticket)) {
-    throw conflict('INVALID_QR', 'QR token is invalid', 400);
+    throw conflict('INVALID_QR', 'رمز QR غير صالح', 400);
   }
 
   const run = await loadDriverCurrentRun(driverId, session);
@@ -380,10 +380,10 @@ async function withTransactionRetry(work) {
       lastError = error;
       if (error instanceof ApiError || error?.statusCode) throw error;
       if (error?.code === 11000) {
-        throw conflict('VALIDATION_CONFLICT', 'Validation could not be completed');
+        throw conflict('VALIDATION_CONFLICT', 'تعذّر إتمام التحقق');
       }
       if (!isTransientTransactionError(error) || attempt === MAX_RETRIES) {
-        throw conflict('VALIDATION_CONFLICT', 'Validation could not be completed');
+        throw conflict('VALIDATION_CONFLICT', 'تعذّر إتمام التحقق');
       }
     } finally {
       await session.endSession();
@@ -413,7 +413,7 @@ async function validateTicket(driverId, { qrToken }) {
         if (canAttachAlreadyUsedDisplay({ ticket: used, claims, run, driverId })) {
           throw alreadyUsedError(await alreadyUsedDisplay(used._id));
         }
-        throw conflict('TICKET_ALREADY_USED', 'Ticket has already been used');
+        throw conflict('TICKET_ALREADY_USED', 'تم استخدام التذكرة مسبقًا');
       }
     }
     throw error;
@@ -424,10 +424,10 @@ async function resolveEligibleTicketForDriver(driverId, qrToken) {
   const claims = verifyPresentedQrToken(qrToken);
   const ticket = await Ticket.findById(claims.ticketId);
   if (!ticket) {
-    throw conflict('TICKET_UNAVAILABLE', 'Ticket is unavailable', 404);
+    throw conflict('TICKET_UNAVAILABLE', 'التذكرة غير متاحة', 404);
   }
   if (!claimsMatchTicket(claims, ticket)) {
-    throw conflict('INVALID_QR', 'QR token is invalid', 400);
+    throw conflict('INVALID_QR', 'رمز QR غير صالح', 400);
   }
 
   const run = await loadDriverCurrentRun(driverId);
@@ -454,7 +454,7 @@ function toDriverTicketPreview(snapshot) {
   const ticketId = snapshot?.ticketId && String(snapshot.ticketId);
   const tripId = snapshot?.tripId && String(snapshot.tripId);
   if (!ticketId || !tripId || !displayName) {
-    throw new ApiError(404, 'Ticket is unavailable', { code: 'TICKET_UNAVAILABLE' });
+    throw new ApiError(404, 'التذكرة غير متاحة', { code: 'TICKET_UNAVAILABLE' });
   }
   return {
     ticket: {
@@ -472,7 +472,7 @@ function toDriverValidationResult(snapshot, replayed) {
   const tripId = snapshot?.tripId && String(snapshot.tripId);
   const usedAt = snapshot?.usedAt ? new Date(snapshot.usedAt) : null;
   if (!ticketId || !tripId || !displayName || !usedAt || Number.isNaN(usedAt.getTime())) {
-    throw new ApiError(404, 'Ticket is unavailable', { code: 'TICKET_UNAVAILABLE' });
+    throw new ApiError(404, 'التذكرة غير متاحة', { code: 'TICKET_UNAVAILABLE' });
   }
   return {
     replayed: Boolean(replayed),

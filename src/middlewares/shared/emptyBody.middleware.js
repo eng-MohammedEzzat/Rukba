@@ -8,8 +8,8 @@ function rejectNonemptyBody(req, _res, next) {
   if (typeof body === 'object' && !Array.isArray(body) && Object.keys(body).length === 0) {
     return next();
   }
-  return next(new ApiError(400, 'Validation failed', [
-    { path: 'body', message: 'Request body must be empty' },
+  return next(new ApiError(400, 'البيانات المدخلة غير صالحة', [
+    { path: 'body', message: 'يجب أن يكون جسم الطلب فارغًا' },
   ]));
 }
 

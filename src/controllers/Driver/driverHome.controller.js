@@ -6,7 +6,7 @@ const driverHomeService = require('../../services/Driver/driverHome.service');
 
 const getHome = asyncHandler(async (req, res) =>
   apiResponse(res, {
-    message: 'Driver home retrieved',
+    message: 'تم جلب بيانات الصفحة الرئيسية للسائق',
     data: await driverHomeService.getDriverHome(req.user._id),
   }));
 

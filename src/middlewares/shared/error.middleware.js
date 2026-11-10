@@ -4,7 +4,7 @@ const ApiError = require('../../utils/shared/ApiError');
 const apiResponse = require('../../utils/shared/apiResponse');
 
 function notFoundHandler(_req, _res, next) {
-  next(new ApiError(404, 'Route not found'));
+  next(new ApiError(404, 'الرابط المطلوب غير موجود'));
 }
 
 function duplicateMessage(err) {
@@ -12,23 +12,23 @@ function duplicateMessage(err) {
   const rawField = Object.keys(err.keyPattern || {})[0];
   const field = rawField === 'usernameNormalized' ? 'username' : rawField;
   if (field === 'phone' || field === 'username') {
-    return 'Phone or username already registered';
+    return 'رقم الهاتف أو اسم المستخدم مسجّل مسبقًا';
   }
-  return field ? `${field} already exists` : 'This record already exists';
+  return field ? `قيمة الحقل ${field} موجودة مسبقًا` : 'هذا السجل موجود مسبقًا';
 }
 
 function uploadMessage(err) {
   if (err.name !== 'MulterError') return null;
   return err.code === 'LIMIT_FILE_SIZE'
-    ? 'Image must be 2MB or smaller'
-    : 'Invalid upload';
+    ? 'يجب ألا يتجاوز حجم الصورة 2 ميغابايت'
+    : 'الملف المرفوع غير صالح';
 }
 
 function fieldErrors(details) {
   if (!Array.isArray(details)) return null;
   return details.map((issue) => ({
     field: String(issue.path || ''),
-    message: String(issue.message || 'Invalid value'),
+    message: String(issue.message || 'قيمة غير صالحة'),
   }));
 }
 
@@ -45,8 +45,8 @@ function errorHandler(err, _req, res, _next) {
   let statusCode = err.statusCode || 500;
   let message =
     statusCode === 500 && !err.isOperational
-      ? 'Internal server error'
-      : err.message || 'Internal server error';
+      ? 'حدث خطأ داخلي في الخادم'
+      : err.message || 'حدث خطأ داخلي في الخادم';
 
   const duplicate = duplicateMessage(err);
   if (duplicate) {

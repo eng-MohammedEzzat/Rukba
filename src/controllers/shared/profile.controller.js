@@ -6,7 +6,7 @@ const userService = require('../../services/shared/user.service');
 
 const getProfile = asyncHandler(async (req, res) => {
   return apiResponse(res, {
-    message: 'OK',
+    message: 'تمت العملية بنجاح',
     data: { user: userService.toPublicUser(req.user) },
   });
 });
@@ -14,7 +14,7 @@ const getProfile = asyncHandler(async (req, res) => {
 const updateProfile = asyncHandler(async (req, res) => {
   const user = await userService.updateProfile(req.user, req.body, req.file);
   return apiResponse(res, {
-    message: 'Profile updated',
+    message: 'تم تحديث الملف الشخصي',
     data: { user },
   });
 });

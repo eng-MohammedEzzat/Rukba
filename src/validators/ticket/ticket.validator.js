@@ -1,11 +1,11 @@
 'use strict';
 
-const { z } = require('zod');
+const { z } = require('../../config/zod');
 const { TICKET_STATUSES } = require('../../constants/enums');
 
 const objectId = z
   .string()
-  .regex(/^[0-9a-fA-F]{24}$/, 'Invalid id');
+  .regex(/^[0-9a-fA-F]{24}$/, 'المعرّف غير صالح');
 
 const bookTicketSchema = z.object({
   routeId: objectId,

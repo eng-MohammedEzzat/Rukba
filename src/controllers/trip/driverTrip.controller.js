@@ -11,7 +11,7 @@ const createRun = asyncHandler(async (req, res) => {
   const tripRun = await driverTripService.createRun(req.user._id, req.body);
   return apiResponse(res, {
     statusCode: tripRun.replayed ? 200 : 201,
-    message: 'Trip run created',
+    message: 'تم إنشاء الرحلة بنجاح',
     data: tripRun,
   });
 });
@@ -31,7 +31,7 @@ const complete = asyncHandler(async (req, res) => {
     'complete',
     req.body.operationId
   );
-  return apiResponse(res, { message: 'Trip run completed', data: completedRun });
+  return apiResponse(res, { message: 'تم إنهاء الرحلة بنجاح', data: completedRun });
 });
 
 module.exports = {

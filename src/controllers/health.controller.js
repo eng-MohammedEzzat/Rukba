@@ -4,7 +4,7 @@ const apiResponse = require('../utils/shared/apiResponse');
 
 function healthHandler(_req, res) {
   return apiResponse(res, {
-    message: 'OK',
+    message: 'تمت العملية بنجاح',
     data: {
       service: 'rukba',
       uptime: process.uptime(),

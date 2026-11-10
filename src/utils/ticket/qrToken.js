@@ -52,7 +52,7 @@ function signQrToken(claims) {
   const expiresAt = new Date(claims.expiresAt);
   const expiresInSeconds = Math.floor((expiresAt.getTime() - Date.now()) / 1000);
   if (!Number.isFinite(expiresInSeconds) || expiresInSeconds <= 0) {
-    throw new ApiError(409, 'Trip QR window has already expired');
+    throw new ApiError(409, 'انتهت مدة صلاحية رمز QR للرحلة');
   }
 
   const jti = crypto.randomUUID();
@@ -93,7 +93,7 @@ function asDate(value) {
 }
 
 function invalidQr() {
-  return new ApiError(400, 'QR token is invalid', { code: 'INVALID_QR' });
+  return new ApiError(400, 'رمز QR غير صالح', { code: 'INVALID_QR' });
 }
 
 /**

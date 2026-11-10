@@ -46,7 +46,7 @@ async function loginRole(role, credentials, meta = {}) {
   try {
     if (!(await hasValidRoleCredentials(user, credentials, role))) {
       failedCredentials = true;
-      throw roleApiError(401, 'Invalid credentials', 'INVALID_CREDENTIALS');
+      throw roleApiError(401, 'بيانات الدخول غير صحيحة', 'INVALID_CREDENTIALS');
     }
 
     const profile = role === 'driver' ? await DriverProfile.findOne({ user: user._id }) : null;

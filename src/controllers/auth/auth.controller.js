@@ -16,7 +16,7 @@ const registerPassenger = asyncHandler(async (req, res) => {
   );
   return apiResponse(res, {
     statusCode: 201,
-    message: 'Registered',
+    message: 'تم إنشاء الحساب بنجاح',
     data: registration,
   });
 });
@@ -24,7 +24,7 @@ const registerPassenger = asyncHandler(async (req, res) => {
 const loginPassenger = asyncHandler(async (req, res) => {
   const loginSession = await authService.loginPassenger(req.body, clientMetadata(req));
   return apiResponse(res, {
-    message: 'Logged in',
+    message: 'تم تسجيل الدخول بنجاح',
     data: loginSession,
   });
 });
@@ -35,7 +35,7 @@ const refreshPassengerSession = asyncHandler(async (req, res) => {
     clientMetadata(req)
   );
   return apiResponse(res, {
-    message: 'Token refreshed',
+    message: 'تم تجديد رمز الدخول',
     data: refreshedSession,
   });
 });
@@ -43,7 +43,7 @@ const refreshPassengerSession = asyncHandler(async (req, res) => {
 const logoutPassenger = asyncHandler(async (req, res) => {
   const logoutSession = await authService.logout(req.body.refreshToken);
   return apiResponse(res, {
-    message: 'Logged out',
+    message: 'تم تسجيل الخروج',
     data: logoutSession,
   });
 });
@@ -51,7 +51,7 @@ const logoutPassenger = asyncHandler(async (req, res) => {
 const logoutAllPassengerSessions = asyncHandler(async (req, res) => {
   const logoutAllSessions = await authService.logoutAll(req.user._id);
   return apiResponse(res, {
-    message: 'Logged out from all sessions',
+    message: 'تم تسجيل الخروج من جميع الجلسات',
     data: logoutAllSessions,
   });
 });
@@ -60,7 +60,7 @@ const registerDriver = asyncHandler(async (req, res) => {
   const registration = await driverRegistrationService.registerDriver(req.body, req.file);
   return apiResponse(res, {
     statusCode: 201,
-    message: 'Driver registered',
+    message: 'تم تسجيل السائق بنجاح',
     data: registration,
   });
 });
@@ -69,7 +69,7 @@ function loginRole(role) {
   return asyncHandler(async (req, res) => {
     const loginSession = await roleAuthService.loginRole(role, req.body, clientMetadata(req));
     return apiResponse(res, {
-      message: 'Logged in',
+      message: 'تم تسجيل الدخول بنجاح',
       data: loginSession,
     });
   });
@@ -83,7 +83,7 @@ function refreshRoleSession(role) {
       clientMetadata(req)
     );
     return apiResponse(res, {
-      message: 'Token refreshed',
+      message: 'تم تجديد رمز الدخول',
       data: refreshedSession,
     });
   });
@@ -93,7 +93,7 @@ function logoutRole(role) {
   return asyncHandler(async (req, res) => {
     const logoutSession = await sessionService.revokeRoleFamily(req.body.refreshToken, role);
     return apiResponse(res, {
-      message: 'Logged out',
+      message: 'تم تسجيل الخروج',
       data: logoutSession,
     });
   });
@@ -103,7 +103,7 @@ function logoutAllRoleSessions(role) {
   return asyncHandler(async (req, res) => {
     const logoutAllSessions = await sessionService.revokeAllRoleSessions(req.user._id, role);
     return apiResponse(res, {
-      message: 'Logged out from all sessions',
+      message: 'تم تسجيل الخروج من جميع الجلسات',
       data: logoutAllSessions,
     });
   });

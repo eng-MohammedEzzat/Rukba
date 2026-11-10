@@ -88,7 +88,7 @@ async function getTripById(tripId) {
     .lean();
 
   if (!trip) {
-    throw new ApiError(404, 'Trip not found');
+    throw new ApiError(404, 'الرحلة غير موجودة');
   }
 
   return toPublicTrip(trip);

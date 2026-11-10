@@ -1,10 +1,10 @@
 'use strict';
 
-const { z } = require('zod');
+const { z } = require('../../config/zod');
 
 const objectId = z
   .string()
-  .regex(/^[0-9a-fA-F]{24}$/, 'Invalid id');
+  .regex(/^[0-9a-fA-F]{24}$/, 'المعرّف غير صالح');
 
 const saveRouteSchema = z
   .object({

@@ -29,12 +29,12 @@ async function ensureWalletCollections() {
 }
 
 function insufficientBalance() {
-  return new ApiError(409, 'Insufficient wallet balance', { code: 'INSUFFICIENT_BALANCE' });
+  return new ApiError(409, 'رصيد المحفظة غير كافٍ', { code: 'INSUFFICIENT_BALANCE' });
 }
 
 function assertAmount(amountMinor) {
   if (!Number.isSafeInteger(amountMinor) || amountMinor <= 0) {
-    throw new ApiError(400, 'Wallet amount must be a positive integer (agorot)');
+    throw new ApiError(400, 'يجب أن يكون مبلغ المحفظة عددًا صحيحًا موجبًا (بالأغورة)');
   }
 }
 
@@ -63,7 +63,7 @@ async function recordChange(walletId, {
   );
   if (!wallet) {
     if (direction === 'debit') throw insufficientBalance();
-    throw new ApiError(409, 'Wallet balance limit reached');
+    throw new ApiError(409, 'تم بلوغ الحد الأقصى لرصيد المحفظة');
   }
 
   const [transaction] = await WalletTransaction.create(

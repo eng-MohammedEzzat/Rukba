@@ -42,15 +42,15 @@ function qualifyingTickets(tickets, tripId) {
 
 function calculateEarning({ tickets = [], ticketsUsed, completedAt, tripId } = {}) {
   if (!(completedAt instanceof Date) || Number.isNaN(completedAt.getTime())) {
-    throw sourceInconsistent('Completion time is unavailable');
+    throw sourceInconsistent('وقت إنهاء الرحلة غير متوفر');
   }
   if (!isSafeNonNegativeInteger(ticketsUsed)) {
-    throw sourceInconsistent('Trip used-ticket counter is inconsistent');
+    throw sourceInconsistent('عدّاد التذاكر المستخدمة في الرحلة غير متّسق');
   }
 
   const qualified = qualifyingTickets(tickets, tripId);
   if (qualified.length !== ticketsUsed) {
-    throw sourceInconsistent('Used Ticket count does not match the Trip counter');
+    throw sourceInconsistent('عدد التذاكر المستخدمة لا يطابق عدّاد الرحلة');
   }
   if (qualified.length === 0) return null;
 
@@ -58,18 +58,18 @@ function calculateEarning({ tickets = [], ticketsUsed, completedAt, tripId } = {
   let grossMinor = 0;
   for (const ticket of qualified) {
     if (!isSafeNonNegativeInteger(ticket.fareMinor)) {
-      throw sourceInconsistent('A qualifying Ticket fare is not a safe integer');
+      throw sourceInconsistent('أجرة إحدى التذاكر المحتسبة ليست عددًا صحيحًا صالحًا');
     }
     if (!ACCEPTED_CURRENCIES.includes(ticket.currency)) {
-      throw sourceInconsistent('A qualifying Ticket currency is missing or unsupported');
+      throw sourceInconsistent('عملة إحدى التذاكر المحتسبة مفقودة أو غير مدعومة');
     }
     if (currency && currency !== ticket.currency) {
-      throw sourceInconsistent('Qualifying Tickets do not share one currency');
+      throw sourceInconsistent('التذاكر المحتسبة ليست بعملة واحدة');
     }
     currency = ticket.currency;
     const next = grossMinor + ticket.fareMinor;
     if (next > MAX_SAFE) {
-      throw sourceInconsistent('Exact fare sum exceeds a safe integer');
+      throw sourceInconsistent('مجموع الأجرة يتجاوز الحد المسموح به');
     }
     grossMinor = next;
   }

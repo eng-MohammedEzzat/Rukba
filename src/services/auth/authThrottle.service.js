@@ -163,7 +163,7 @@ async function throwRestriction(keys, now) {
   );
   const fallbackWaits = keys.map((entry) => limitsFor(entry.scope).lockMs / 1000);
   const retryAfter = Math.ceil(Math.max(0, ...lockWaits, ...fallbackWaits));
-  throw new ApiError(429, 'Too many failed sign-in attempts. Try again later.', {
+  throw new ApiError(429, 'محاولات تسجيل دخول فاشلة كثيرة. يرجى المحاولة لاحقًا.', {
     retryAfterSeconds: retryAfter,
   });
 }

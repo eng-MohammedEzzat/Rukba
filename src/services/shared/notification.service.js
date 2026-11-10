@@ -44,7 +44,7 @@ async function listNotifications(userId, query) {
 }
 
 function notificationNotFound() {
-  return new ApiError(404, 'Notification not found', { code: 'NOTIFICATION_NOT_FOUND' });
+  return new ApiError(404, 'الإشعار غير موجود', { code: 'NOTIFICATION_NOT_FOUND' });
 }
 
 async function markNotificationRead(userId, notificationId) {
@@ -76,16 +76,16 @@ function bookingNotificationDocs({ passengerId, ticket, route, receiptCode }) {
     {
       user: passengerId,
       type: 'ticket_issued',
-      title: 'New ticket',
-      body: `Ticket ${ticket.ticketCode} is ready`,
+      title: 'تذكرة جديدة',
+      body: `تذكرتك ${ticket.ticketCode} جاهزة`,
       eventKey: `ticket_issued:${ticket._id}`,
       refs,
     },
     {
       user: passengerId,
       type: 'receipt_issued',
-      title: 'Receipt issued',
-      body: `Receipt ${receiptCode} is available`,
+      title: 'تم إصدار الإيصال',
+      body: `الإيصال ${receiptCode} متاح الآن`,
       eventKey: `receipt_issued:${ticket._id}`,
       refs,
     },
@@ -100,8 +100,8 @@ function ticketUsedNotificationDoc({ passengerId, ticket, trip, driverDisplayNam
   return {
     user: passengerId,
     type: 'ticket_used',
-    title: 'Ticket scanned',
-    body: `Ticket ${ticket.ticketCode} was scanned by the driver ${driverDisplayName}`,
+    title: 'تم مسح التذكرة',
+    body: `قام السائق ${driverDisplayName} بمسح التذكرة ${ticket.ticketCode}`,
     eventKey: `ticket_used:${ticket._id}`,
     refs: {
       ticketId: ticket._id,

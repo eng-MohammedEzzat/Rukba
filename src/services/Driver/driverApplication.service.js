@@ -15,7 +15,7 @@ const SNAPSHOT_QUERY = {
 };
 
 function notFound() {
-  return roleApiError(404, 'Driver application not found.', 'APPLICATION_NOT_FOUND');
+  return roleApiError(404, 'طلب انضمام السائق غير موجود.', 'APPLICATION_NOT_FOUND');
 }
 
 function accountFilter(userId, role, activeOnly) {
@@ -123,7 +123,7 @@ async function decideApplication(applicationId, reviewerId, decision) {
   let currentDecision = false;
   await runInTransaction(async (session) => {
       if (!(await incrementAccountGuard(reviewerId, 'admin', session, true))) {
-        throw roleApiError(401, 'Current admin account is unavailable.', 'INVALID_CREDENTIALS');
+        throw roleApiError(401, 'حساب المسؤول الحالي غير متاح.', 'INVALID_CREDENTIALS');
       }
       const records = await applicationById(applicationId, session);
       if (!(await incrementAccountGuard(records.user._id, 'driver', session, false))) {
@@ -162,7 +162,7 @@ async function decideApplication(applicationId, reviewerId, decision) {
       application = toAdminDriverApplication(records.user, profile);
   });
   if (currentDecision) {
-    throw roleApiError(409, 'Application already has a final decision.', 'APPLICATION_ALREADY_DECIDED', {
+    throw roleApiError(409, 'تم اتخاذ قرار نهائي بشأن هذا الطلب مسبقًا.', 'APPLICATION_ALREADY_DECIDED', {
       application,
     });
   }

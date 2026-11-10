@@ -53,9 +53,9 @@ const registerPassenger = async (input, meta, imageFile)=> {
 
   if (existing) {
     if (existing.phone === normalizedPhone) {
-      throw new ApiError(409, 'Phone already registered');
+      throw new ApiError(409, 'رقم الهاتف مسجّل مسبقًا');
     }
-    throw new ApiError(409, 'Username already taken');
+    throw new ApiError(409, 'اسم المستخدم مستخدم مسبقًا');
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
@@ -122,21 +122,21 @@ const loginPassenger= async ({ phone, username, password }, meta = {})=> {
   let activePassenger = false;
   try {
     if (!user) {
-      throw new ApiError(401, 'Invalid credentials');
+      throw new ApiError(401, 'بيانات الدخول غير صحيحة');
     }
 
     const passwordMatches = await bcrypt.compare(password, user.passwordHash);
     if (!passwordMatches) {
       failedCredentials = true;
-      throw new ApiError(401, 'Invalid credentials');
+      throw new ApiError(401, 'بيانات الدخول غير صحيحة');
     }
 
     if (user.role !== 'passenger') {
-      throw new ApiError(403, 'Only passenger accounts can sign in here');
+      throw new ApiError(403, 'يمكن لحسابات الركاب فقط تسجيل الدخول من هنا');
     }
 
     if (user.status !== 'active') {
-      throw new ApiError(403, 'Account is not active');
+      throw new ApiError(403, 'الحساب غير مفعّل');
     }
 
     activePassenger = true;
@@ -163,7 +163,7 @@ const refreshTokens=async  (rawRefreshToken, meta)=> {
   );
 
   if (!stored) {
-    throw new ApiError(401, 'Invalid or expired refresh token');
+    throw new ApiError(401, 'رمز التجديد غير صالح أو منتهي الصلاحية');
   }
 
   const user = await User.findById(stored.user);
@@ -173,7 +173,7 @@ const refreshTokens=async  (rawRefreshToken, meta)=> {
     user.status !== 'active' ||
     user.role !== 'passenger'
   ) {
-    throw new ApiError(401, 'Invalid or expired refresh token');
+    throw new ApiError(401, 'رمز التجديد غير صالح أو منتهي الصلاحية');
   }
 
   return issueTokenPair(user, meta);

@@ -8,7 +8,7 @@ const bookTicket = asyncHandler(async (req, res) => {
   const booking = await ticketService.bookTicket(req.user, req.body);
   return apiResponse(res, {
     statusCode: 201,
-    message: 'Ticket booked',
+    message: 'تم حجز التذكرة بنجاح',
     data: booking,
   });
 });
@@ -19,7 +19,7 @@ const listTickets = asyncHandler(async (req, res) => {
     req.validatedQuery || {}
   );
   return apiResponse(res, {
-    message: 'OK',
+    message: 'تمت العملية بنجاح',
     data: ticketList,
   });
 });
@@ -30,7 +30,7 @@ const getTicket = asyncHandler(async (req, res) => {
     req.params.ticketId
   );
   return apiResponse(res, {
-    message: 'OK',
+    message: 'تمت العملية بنجاح',
     data: { ticket },
   });
 });
@@ -41,7 +41,7 @@ const getTicketQr = asyncHandler(async (req, res) => {
     req.params.ticketId
   );
   return apiResponse(res, {
-    message: 'OK',
+    message: 'تمت العملية بنجاح',
     data: qrLink,
   });
 });
@@ -52,7 +52,7 @@ const cancelTicket = asyncHandler(async (req, res) => {
     req.params.ticketId
   );
   return apiResponse(res, {
-    message: 'Ticket cancelled',
+    message: 'تم إلغاء التذكرة',
     data: { ticket },
   });
 });
@@ -63,7 +63,7 @@ const getTicketReceipt = asyncHandler(async (req, res) => {
     req.params.ticketId
   );
   return apiResponse(res, {
-    message: 'OK',
+    message: 'تمت العملية بنجاح',
     data: receipt,
   });
 });

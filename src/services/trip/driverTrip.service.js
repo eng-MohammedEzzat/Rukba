@@ -42,10 +42,10 @@ async function eligibleInSession(driverId, session) {
   const user = await User.findById(driverId).select('+authRevision').session(session);
   const profile = await DriverProfile.findOne({ user: driverId }).session(session);
   if (!isEligibleDriver(user, profile)) {
-    throw new ApiError(403, 'Driver is not eligible to operate', { code: 'DRIVER_INELIGIBLE' });
+    throw new ApiError(403, 'السائق غير مؤهل للعمل حاليًا', { code: 'DRIVER_INELIGIBLE' });
   }
   if (!Number.isSafeInteger(user.authRevision) || user.authRevision >= MAX_SAFE) {
-    throw conflict('TRIP_STATE_CONFLICT', 'Driver authorization guard is unavailable');
+    throw conflict('TRIP_STATE_CONFLICT', 'تعذّر التحقق من صلاحية السائق');
   }
   const fenced = await User.updateOne(
     { _id: driverId, role: 'driver', status: 'active', isDeleted: { $ne: true },
@@ -53,7 +53,7 @@ async function eligibleInSession(driverId, session) {
     { $inc: { authRevision: 1 } }, { session }
   );
   if (fenced.matchedCount !== 1) {
-    throw new ApiError(403, 'Driver is not eligible to operate', { code: 'DRIVER_INELIGIBLE' });
+    throw new ApiError(403, 'السائق غير مؤهل للعمل حاليًا', { code: 'DRIVER_INELIGIBLE' });
   }
   return profile;
 }
@@ -63,7 +63,7 @@ async function findReplay(driverId, operationId, inputFingerprint, session) {
   const event = await (session ? query.session(session) : query);
   if (!event) return null;
   if (event.inputFingerprint !== inputFingerprint) {
-    throw conflict('OPERATION_KEY_REUSED', 'Operation identifier was used for another action');
+    throw conflict('OPERATION_KEY_REUSED', 'معرّف العملية مستخدم لإجراء آخر');
   }
   return { ...event.meta.result, replayed: true };
 }
@@ -127,7 +127,7 @@ async function createRun(driverId, { routeId, operationId, vehicleLabel }) {
     if (error.code === 11000) {
       const replay = await findReplay(driverId, operationId, inputFingerprint);
       if (replay) return replay;
-      throw conflict('ACTIVE_TRIP_EXISTS', 'Driver already has an active run');
+      throw conflict('ACTIVE_TRIP_EXISTS', 'لدى السائق رحلة نشطة بالفعل');
     }
     throw error;
   }
@@ -140,9 +140,9 @@ async function createRunInTransaction({
   if (replay) return replay;
   const profile = await eligibleInSession(driverId, session);
   const current = await Trip.exists({ driver: driverId, driverActive: true }).session(session);
-  if (current) throw conflict('ACTIVE_TRIP_EXISTS', 'Driver already has an active run');
+  if (current) throw conflict('ACTIVE_TRIP_EXISTS', 'لدى السائق رحلة نشطة بالفعل');
   const route = await touchActiveRoute(routeId, session);
-  if (!route) throw new ApiError(404, 'Route not found', { code: 'ROUTE_NOT_FOUND' });
+  if (!route) throw new ApiError(404, 'خط السير غير موجود', { code: 'ROUTE_NOT_FOUND' });
   const catalog = routeCatalogDisplay(route);
   const occurredAt = new Date();
   const [trip] = await Trip.create([{
@@ -170,7 +170,7 @@ async function currentRun(driverId) {
 
 async function ownedRun(driverId, tripId) {
   const trip = await Trip.findOne({ _id: tripId, driver: driverId, isDeleted: false }).lean();
-  if (!trip) throw new ApiError(404, 'Trip not found', { code: 'TRIP_NOT_FOUND' });
+  if (!trip) throw new ApiError(404, 'الرحلة غير موجودة', { code: 'TRIP_NOT_FOUND' });
   return { trip: toPublicDriverTrip(trip) };
 }
 
@@ -220,9 +220,9 @@ async function transitionRun(driverId, tripId, action, operationId) {
         const replay = await findReplay(driverId, operationId, inputFingerprint);
         if (replay) return replay;
         if (action === 'complete') {
-          throw conflict('EARNING_CONFLICT', 'An incompatible earning already exists for this trip');
+          throw conflict('EARNING_CONFLICT', 'توجد أرباح غير متوافقة مسجّلة لهذه الرحلة');
         }
-        throw conflict('TRIP_STATE_CONFLICT', 'Trip changed during operation');
+        throw conflict('TRIP_STATE_CONFLICT', 'تغيّرت حالة الرحلة أثناء تنفيذ العملية');
       }
       const revisionConflict = error?.details?.code === 'TRIP_STATE_CONFLICT';
       const canRetry = action === 'complete'
@@ -242,13 +242,13 @@ async function transitionRun(driverId, tripId, action, operationId) {
 
 function assertTransitionAllowed(trip, rule, action) {
   if (!matchesFromStatus(rule, trip.status) || !trip.driverActive) {
-    throw conflict('TRIP_STATE_CONFLICT', 'Trip state does not allow this action');
+    throw conflict('TRIP_STATE_CONFLICT', 'حالة الرحلة لا تسمح بهذا الإجراء');
   }
   if (!Number.isSafeInteger(trip.revision) || trip.revision >= MAX_SAFE) {
-    throw conflict('TRIP_STATE_CONFLICT', 'Trip revision is unavailable');
+    throw conflict('TRIP_STATE_CONFLICT', 'إصدار الرحلة غير متوفر');
   }
   if (action === 'complete' && trip.status === 'in_progress' && !trip.startedAt) {
-    throw conflict('TRIP_STATE_CONFLICT', 'Trip has no start time');
+    throw conflict('TRIP_STATE_CONFLICT', 'لا يوجد وقت بدء للرحلة');
   }
 }
 
@@ -274,7 +274,7 @@ async function incrementCompletedTrips(driverId, session) {
     { $inc: { totalTrips: 1 } }, { session }
   );
   if (incremented.matchedCount !== 1) {
-    throw conflict('TRIP_STATE_CONFLICT', 'Driver trip total unavailable');
+    throw conflict('TRIP_STATE_CONFLICT', 'إجمالي رحلة السائق غير متوفر');
   }
 }
 
@@ -300,7 +300,7 @@ async function transitionInTransaction({ session, driverId, tripId, action,
   if (replay) return replay;
   await eligibleInSession(driverId, session);
   const trip = await Trip.findOne({ _id: tripId, driver: driverId, isDeleted: false }).session(session);
-  if (!trip) throw new ApiError(404, 'Trip not found', { code: 'TRIP_NOT_FOUND' });
+  if (!trip) throw new ApiError(404, 'الرحلة غير موجودة', { code: 'TRIP_NOT_FOUND' });
   assertTransitionAllowed(trip, rule, action);
   const occurredAt = new Date();
   const startedAt = trip.startedAt || occurredAt;
@@ -320,7 +320,7 @@ async function transitionInTransaction({ session, driverId, tripId, action,
       const existing = await Earning.findOne({ trip: trip._id }).session(session).lean();
       if (existing) {
         if (!earningSnapshotsMatch(existing, expectedEarningSnapshot(calculation, driverId, trip))) {
-          throw conflict('EARNING_CONFLICT', 'An incompatible earning already exists for this trip');
+          throw conflict('EARNING_CONFLICT', 'توجد أرباح غير متوافقة مسجّلة لهذه الرحلة');
         }
       } else {
         if (writeBarriers.beforeEarningCreate) await writeBarriers.beforeEarningCreate();
@@ -346,7 +346,7 @@ async function transitionInTransaction({ session, driverId, tripId, action,
           }], { session });
         } catch (error) {
           if (error.code !== 11000) throw error;
-          throw conflict('EARNING_CONFLICT', 'An incompatible earning already exists for this trip');
+          throw conflict('EARNING_CONFLICT', 'توجد أرباح غير متوافقة مسجّلة لهذه الرحلة');
         }
         await creditDriverWallet({ session, driverId, trip, earning, usedTickets });
       }
@@ -355,7 +355,7 @@ async function transitionInTransaction({ session, driverId, tripId, action,
   if (writeBarriers.beforeTripWrite) await writeBarriers.beforeTripWrite();
   const { filter, update } = transitionWrite(trip, driverId, rule, action, occurredAt);
   const changed = await Trip.findOneAndUpdate(filter, update, { session, returnDocument: 'after' });
-  if (!changed) throw conflict('TRIP_STATE_CONFLICT', 'Trip changed during operation');
+  if (!changed) throw conflict('TRIP_STATE_CONFLICT', 'تغيّرت حالة الرحلة أثناء تنفيذ العملية');
   if (action === 'complete') {
     if (writeBarriers.beforeDriverCount) await writeBarriers.beforeDriverCount();
     await incrementCompletedTrips(driverId, session);

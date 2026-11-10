@@ -74,7 +74,7 @@ async function persistRoleSession(userId, role, meta, refresh, familyId, session
     writeOptions(session, { returnDocument: 'after' })
   );
   if (!currentUser) {
-    throw roleApiError(401, 'Invalid credentials', 'INVALID_CREDENTIALS');
+    throw roleApiError(401, 'بيانات الدخول غير صحيحة', 'INVALID_CREDENTIALS');
   }
   await RefreshToken.create(
     [tokenRecord(userId, refresh, role, familyId, meta)],
@@ -121,7 +121,7 @@ async function rotateRoleSession(rawToken, role, meta = {}) {
 async function persistRoleRotation(rawToken, role, meta, refresh, now, session) {
   const stored = await findRoleToken(hashToken(rawToken), role, session, now);
   if (!stored?.familyId) {
-    throw roleApiError(401, 'Invalid or expired refresh token', 'INVALID_REFRESH_TOKEN');
+    throw roleApiError(401, 'رمز التجديد غير صالح أو منتهي الصلاحية', 'INVALID_REFRESH_TOKEN');
   }
   const currentUser = await activeRoleUser(stored.user, role, session);
   await consumeRefresh(stored, role, now, session);
@@ -139,7 +139,7 @@ async function activeRoleUser(userId, role, session) {
     writeOptions(session, { returnDocument: 'after' })
   );
   if (!user) {
-    throw roleApiError(401, 'Invalid or expired refresh token', 'INVALID_REFRESH_TOKEN');
+    throw roleApiError(401, 'رمز التجديد غير صالح أو منتهي الصلاحية', 'INVALID_REFRESH_TOKEN');
   }
   return user;
 }
@@ -151,7 +151,7 @@ async function consumeRefresh(stored, role, now, session) {
     writeOptions(session)
   );
   if (consumeResult.modifiedCount !== 1) {
-    throw roleApiError(401, 'Invalid or expired refresh token', 'INVALID_REFRESH_TOKEN');
+    throw roleApiError(401, 'رمز التجديد غير صالح أو منتهي الصلاحية', 'INVALID_REFRESH_TOKEN');
   }
 }
 
@@ -198,7 +198,7 @@ async function revokeAllRoleSessions(userId, role) {
 
 async function revokeAllInTransaction(userId, role, now, session) {
   if (!(await incrementSessionGuard(userId, role, session))) {
-    throw new ApiError(401, 'Current account is unavailable.');
+    throw new ApiError(401, 'الحساب الحالي غير متاح.');
   }
   await RefreshToken.updateMany(
     withRoleFilter({ user: userId, revokedAt: null }, role),

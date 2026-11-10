@@ -1,8 +1,8 @@
 'use strict';
 
-const { z } = require('zod');
+const { z } = require('../../config/zod');
 
-const objectId = z.string().regex(/^[a-fA-F0-9]{24}$/, 'Invalid identifier');
+const objectId = z.string().regex(/^[a-fA-F0-9]{24}$/, 'المعرّف غير صالح');
 const positiveInt = z.string().regex(/^[1-9][0-9]*$/).transform(Number).pipe(z.number().int().safe());
 
 const notificationListQuerySchema = z.object({

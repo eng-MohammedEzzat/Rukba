@@ -1,6 +1,6 @@
 'use strict';
 
-const { z } = require('zod');
+const { z } = require('../../config/zod');
 
 const applicationQuerySchema = z
   .object({

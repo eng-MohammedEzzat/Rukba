@@ -8,7 +8,7 @@ const listRoutes = asyncHandler(async (req, res) => {
   const routes = await routeService.listActiveRoutes(req.validatedQuery || {});
 
   return apiResponse(res, {
-    message: 'OK',
+    message: 'تمت العملية بنجاح',
     data: { routes },
   });
 });
@@ -17,7 +17,7 @@ const createRoutes=asyncHandler(async(req,res)=>{
   const route = await routeService.createRoutes(req.body)
   
   return apiResponse(res,{
-    message:"route created successfully",
+    message: 'تم إنشاء خط السير بنجاح',
     data:{route}
   });
 }); 
@@ -26,7 +26,7 @@ const getRoute = asyncHandler(async (req, res) => {
   const route = await routeService.getActiveRouteById(req.params.routeId);
 
   return apiResponse(res, {
-    message: 'OK',
+    message: 'تمت العملية بنجاح',
     data: { route },
   });
 });

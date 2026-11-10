@@ -1,6 +1,6 @@
 'use strict';
 
-const { z } = require('zod');
+const { z } = require('../../config/zod');
 const { TRIP_STATUSES } = require('../../constants/enums');
 
 const UTC_INSTANT = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,3}))?Z$/;
@@ -42,7 +42,7 @@ const decimalLimit = z.string().regex(/^[1-9]\d*$/).transform(Number).pipe(
 const utcInstant = z.string().transform((instant, ctx) => {
   const parsed = parseUtcInstant(instant);
   if (!parsed) {
-    ctx.addIssue({ code: 'custom', message: 'Must be a valid UTC ISO instant YYYY-MM-DDTHH:mm:ss[.SSS]Z' });
+    ctx.addIssue({ code: 'custom', message: 'يجب أن يكون الوقت بصيغة ISO وبتوقيت UTC: YYYY-MM-DDTHH:mm:ss[.SSS]Z' });
     return z.NEVER;
   }
   return parsed;
@@ -59,7 +59,7 @@ const activityQuerySchema = z.object({
     ctx.addIssue({
       code: 'custom',
       path: ['start'],
-      message: 'start must be earlier than end',
+      message: 'يجب أن يكون وقت البداية قبل وقت النهاية',
     });
   }
 });

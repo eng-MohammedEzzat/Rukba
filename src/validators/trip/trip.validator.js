@@ -1,10 +1,10 @@
 'use strict';
 
-const { z } = require('zod');
+const { z } = require('../../config/zod');
 
 const objectId = z
   .string()
-  .regex(/^[0-9a-fA-F]{24}$/, 'Invalid id');
+  .regex(/^[0-9a-fA-F]{24}$/, 'المعرّف غير صالح');
 
 const paginationQuery = {
   page: z.coerce.number().int().min(1).optional(),
@@ -31,7 +31,7 @@ const searchTripsSchema = z
     if (hasRouteId && (hasOrigin || hasDestination)) {
       ctx.addIssue({
         code: 'custom',
-        message: 'Provide routeId or origin+destination, not both',
+        message: 'يرجى تحديد خط السير أو نقطتي الانطلاق والوصول، وليس كليهما',
       });
       return;
     }
@@ -39,7 +39,7 @@ const searchTripsSchema = z
     if (!hasRouteId && hasOrigin !== hasDestination) {
       ctx.addIssue({
         code: 'custom',
-        message: 'Provide both origin and destination',
+        message: 'يرجى تحديد نقطة الانطلاق ونقطة الوصول معًا',
       });
     }
   });

@@ -37,7 +37,7 @@ async function getActiveRouteById(routeId) {
     .lean();
 
   if (!route) {
-    throw new ApiError(404, 'Route not found', { code: 'ROUTE_NOT_FOUND' });
+    throw new ApiError(404, 'خط السير غير موجود', { code: 'ROUTE_NOT_FOUND' });
   }
 
   return toPublicRoute(route);

@@ -10,7 +10,7 @@ function validate(schema, source = 'body') {
         path: issue.path.join('.'),
         message: issue.message,
       }));
-      return next(new ApiError(400, 'Validation failed', details));
+      return next(new ApiError(400, 'البيانات المدخلة غير صالحة', details));
     }
     // Express 5 makes req.query a getter; assign to validatedQuery instead.
     if (source === 'query') {

@@ -14,22 +14,22 @@ const { runInTransaction } = require('../../utils/shared/runInTransaction');
 
 const registrationError= (err)=> {
   if (err.code === 11000) {
-    return roleApiError(409, 'Phone or username already registered', 'IDENTITY_CONFLICT');
+    return roleApiError(409, 'رقم الهاتف أو اسم المستخدم مسجّل مسبقًا', 'IDENTITY_CONFLICT');
   }
   if (
     err.code === 20 ||
     err.code === 303 ||
     /transaction numbers are only allowed|replica set member|mongos/i.test(err.message || '')
   ) {
-    return roleApiError(503, 'Registration is temporarily unavailable.', 'TEMPORARILY_UNAVAILABLE');
+    return roleApiError(503, 'التسجيل غير متاح مؤقتًا.', 'TEMPORARILY_UNAVAILABLE');
   }
   return err;
 }
 
 const registerDriver=async  (input, imageFile)=> {
   if (!imageFile) {
-    throw new ApiError(400, 'Validation failed', [
-      { path: 'image', message: 'image is required' },
+    throw new ApiError(400, 'البيانات المدخلة غير صالحة', [
+      { path: 'image', message: 'الصورة مطلوبة' },
     ]);
   }
 

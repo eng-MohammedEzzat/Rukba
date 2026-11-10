@@ -12,7 +12,7 @@ function ensureConfigured() {
   if (!env.cloudinaryCloudName || !env.cloudinaryApiKey || !env.cloudinaryApiSecret) {
     throw new ApiError(
       500,
-      'Cloudinary is not configured. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET.'
+      'خدمة رفع الصور (Cloudinary) غير مهيّأة. يرجى ضبط CLOUDINARY_CLOUD_NAME و CLOUDINARY_API_KEY و CLOUDINARY_API_SECRET.'
     );
   }
 
@@ -45,7 +45,7 @@ function uploadImage(buffer, { folder, type = 'upload', transformation } = {}) {
 
     const stream = cloudinary.uploader.upload_stream(options, (err, result) => {
       if (err) {
-        reject(new ApiError(502, 'Failed to upload image to Cloudinary', err.message));
+        reject(new ApiError(502, 'تعذّر رفع الصورة', err.message));
         return;
       }
       resolve({
@@ -80,7 +80,7 @@ async function deleteUserImage(publicId) {
 
 function uploadTicketQr(buffer, { ticketId }) {
   if (!ticketId) {
-    throw new ApiError(500, 'ticketId is required for QR upload');
+    throw new ApiError(500, 'معرّف التذكرة مطلوب لرفع رمز QR');
   }
   return uploadImage(buffer, {
     folder: `rukba/tickets/qr/${ticketId}`,
@@ -94,7 +94,7 @@ function uploadTicketQr(buffer, { ticketId }) {
 function ticketQrDownloadUrl(publicId, { ttlSeconds = 300 } = {}) {
   ensureConfigured();
   if (!publicId) {
-    throw new ApiError(404, 'QR image not available');
+    throw new ApiError(404, 'صورة رمز QR غير متوفرة');
   }
   const expiresAt = Math.floor(Date.now() / 1000) + ttlSeconds;
   return cloudinary.utils.private_download_url(publicId, 'png', {

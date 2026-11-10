@@ -11,7 +11,7 @@ const upload = multer({
   limits: { fileSize: MAX_BYTES },
   fileFilter(_req, file, cb) {
     if (!ALLOWED_MIME.has(file.mimetype)) {
-      cb(new ApiError(400, 'Only JPEG, PNG, WebP, or GIF images are allowed'));
+      cb(new ApiError(400, 'يُسمح فقط بالصور بصيغة JPEG أو PNG أو WebP أو GIF'));
       return;
     }
     cb(null, true);

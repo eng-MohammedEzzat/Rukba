@@ -1,6 +1,6 @@
 'use strict';
 
-const { z } = require('zod');
+const { z } = require('../../config/zod');
 const { EARNING_STATUSES } = require('../../constants/enums');
 
 const MONTH = /^([0-9]{4})-(0[1-9]|1[0-2])$/;
@@ -48,7 +48,7 @@ const earningsQuerySchema = z.object({
   month: z.string().transform((monthText, ctx) => {
     const parsed = parseMonth(monthText);
     if (!parsed) {
-      ctx.addIssue({ code: 'custom', message: 'month must be an ASCII YYYY-MM UTC calendar month' });
+      ctx.addIssue({ code: 'custom', message: 'يجب أن يكون الشهر بالصيغة YYYY-MM' });
       return z.NEVER;
     }
     return parsed;

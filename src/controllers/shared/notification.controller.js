@@ -11,7 +11,7 @@ const listNotifications = asyncHandler(async (req, res) =>
 
 const markRead = asyncHandler(async (req, res) =>
   apiResponse(res, {
-    message: 'Notification marked read',
+    message: 'تم تعليم الإشعار كمقروء',
     data: {
       notification: await notificationService.markNotificationRead(
         req.user._id,

@@ -19,7 +19,7 @@ async function updateProfile(user, fields, imageFile) {
   const hasImage = Boolean(imageFile);
 
   if (!hasText && !hasImage) {
-    throw new ApiError(400, 'Provide fullName, username, and/or image');
+    throw new ApiError(400, 'يرجى إدخال الاسم الكامل أو اسم المستخدم أو الصورة');
   }
 
   const updates = {};
@@ -33,7 +33,7 @@ async function updateProfile(user, fields, imageFile) {
         _id: { $ne: user._id },
       }).select('_id');
       if (taken) {
-        throw new ApiError(409, 'Username already taken');
+        throw new ApiError(409, 'اسم المستخدم مستخدم مسبقًا');
       }
     }
     updates.username = username;
@@ -76,7 +76,7 @@ async function updateProfile(user, fields, imageFile) {
     if (uploadedPublicId) {
       await cleanupImageBestEffort(uploadedPublicId);
     }
-    throw new ApiError(401, 'User not found or inactive');
+    throw new ApiError(401, 'المستخدم غير موجود أو غير مفعّل');
   }
 
   if (hasImage && previousPublicId && previousPublicId !== uploadedPublicId) {

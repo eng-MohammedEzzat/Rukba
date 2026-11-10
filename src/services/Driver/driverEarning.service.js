@@ -30,7 +30,7 @@ function setReadBarriers(next = {}) {
 }
 
 function unavailable() {
-  return new ApiError(503, 'Earnings are temporarily unavailable', {
+  return new ApiError(503, 'الأرباح غير متاحة مؤقتًا', {
     code: 'TEMPORARILY_UNAVAILABLE',
   });
 }
@@ -58,7 +58,7 @@ async function loadEligibility(db, driverId, session) {
   const user = await db.collection('users').findOne({ _id: ownerId(driverId) }, { session });
   const profile = await db.collection('driverprofiles').findOne({ user: ownerId(driverId) }, { session });
   if (!isEligibleDriver(user, profile)) {
-    throw new ApiError(403, 'Driver is not eligible to operate', { code: 'DRIVER_NOT_ELIGIBLE' });
+    throw new ApiError(403, 'السائق غير مؤهل للعمل حاليًا', { code: 'DRIVER_NOT_ELIGIBLE' });
   }
   return profile;
 }

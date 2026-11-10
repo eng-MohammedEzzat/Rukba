@@ -13,7 +13,7 @@ function normalizePhone(rawPhone) {
 
   const parsed = parsePhoneNumberFromString(candidate, env.defaultPhoneRegion);
   if (!parsed || !parsed.isValid()) {
-    throw new ApiError(400, 'Invalid phone number', { field: 'phone' });
+    throw new ApiError(400, 'رقم الهاتف غير صالح', { field: 'phone' });
   }
 
   return parsed.format('E.164');

@@ -53,17 +53,23 @@ function tripRevisionMatch(revision) {
   return { revision };
 }
 
+const DENIED_TICKET_MESSAGES = Object.freeze({
+  used: 'تم استخدام التذكرة مسبقًا',
+  cancelled: 'تم إلغاء هذه التذكرة',
+  expired: 'انتهت صلاحية التذكرة',
+});
+
 function assertActiveTicketAccess(ticket, now = new Date()) {
   const denied = deniedTicketAccessStatus(ticket, now);
   if (denied) {
-    throw new ApiError(409, `Ticket is ${denied}`);
+    throw new ApiError(409, DENIED_TICKET_MESSAGES[denied] || 'التذكرة غير متاحة');
   }
 }
 
 function computeTotalFare(fareMinor, passengerCount) {
   const total = fareMinor * passengerCount;
   if (!Number.isSafeInteger(total)) {
-    throw new ApiError(400, 'Passenger count is too large');
+    throw new ApiError(400, 'عدد الركاب كبير جدًا');
   }
   return total;
 }
@@ -90,7 +96,7 @@ function buildReceiptSnapshot({ ticket, route, passenger }) {
 async function loadBookableRoute(routeId) {
   const route = await Route.findOne({ _id: routeId, isActive: true });
   if (!route) {
-    throw new ApiError(404, 'Route not found');
+    throw new ApiError(404, 'خط السير غير موجود');
   }
   return route;
 }
@@ -135,7 +141,7 @@ async function claimRouteForBooking(session, route) {
     route.bookingFence != null
     && (!Number.isSafeInteger(route.bookingFence) || route.bookingFence >= Number.MAX_SAFE_INTEGER)
   ) {
-    throw new ApiError(409, 'Route accounting is unavailable');
+    throw new ApiError(409, 'بيانات حسابات خط السير غير متوفرة');
   }
   const claimed = await Route.findOneAndUpdate(
     {
@@ -150,7 +156,7 @@ async function claimRouteForBooking(session, route) {
     { session, returnDocument: 'after' }
   );
   if (!claimed) {
-    throw new ApiError(409, 'Route is not available');
+    throw new ApiError(409, 'خط السير غير متاح');
   }
   return claimed;
 }
@@ -312,7 +318,7 @@ async function bookTicket(passenger, { routeId, passengerCount = 1 }) {
     }
   }
 
-  throw lastError || new ApiError(500, 'Failed to issue ticket code');
+  throw lastError || new ApiError(500, 'تعذّر إصدار رمز التذكرة');
 }
 
 async function findOwnedTicket(ticketId, passengerId) {
@@ -325,7 +331,7 @@ async function findOwnedTicket(ticketId, passengerId) {
     .lean();
 
   if (!ticket) {
-    throw new ApiError(404, 'Ticket not found');
+    throw new ApiError(404, 'التذكرة غير موجودة');
   }
   return ticket;
 }
@@ -377,7 +383,7 @@ async function getTicketQrLink(passengerId, ticketId) {
   const ticket = await findOwnedTicket(ticketId, passengerId);
   assertActiveTicketAccess(ticket);
   if (!ticket.qr?.imagePublicId) {
-    throw new ApiError(404, 'QR image not available');
+    throw new ApiError(404, 'صورة رمز QR غير متوفرة');
   }
 
   return {
@@ -420,7 +426,7 @@ async function markTicketCancelled(session, ticketId, passengerId, cancelledAt, 
     { returnDocument: 'after', session }
   );
   if (!updated) {
-    throw new ApiError(409, 'Ticket is no longer active');
+    throw new ApiError(409, 'التذكرة لم تعد فعّالة');
   }
   return updated;
 }
@@ -428,7 +434,7 @@ async function markTicketCancelled(session, ticketId, passengerId, cancelledAt, 
 async function incrementCancelledOnOpenTrip(session, trip) {
   if (!Number.isSafeInteger(trip.revision) || trip.revision >= Number.MAX_SAFE_INTEGER ||
     !Number.isSafeInteger(trip.stats.ticketsCancelled) || trip.stats.ticketsCancelled >= Number.MAX_SAFE_INTEGER) {
-    throw new ApiError(409, 'Trip accounting is unavailable');
+    throw new ApiError(409, 'بيانات حسابات الرحلة غير متوفرة');
   }
   const touched = await Trip.findOneAndUpdate(
     {
@@ -442,7 +448,7 @@ async function incrementCancelledOnOpenTrip(session, trip) {
     { session }
   );
   if (!touched) {
-    throw new ApiError(409, 'Trip has already started or ended');
+    throw new ApiError(409, 'الرحلة بدأت أو انتهت بالفعل');
   }
 }
 
@@ -472,7 +478,7 @@ async function cancelTicket(passengerId, ticketId) {
   });
 
   if (!ticket) {
-    throw new ApiError(404, 'Ticket not found');
+    throw new ApiError(404, 'التذكرة غير موجودة');
   }
 
   assertActiveTicketAccess(ticket);
@@ -486,7 +492,7 @@ async function cancelTicket(passengerId, ticketId) {
       }).session(session);
 
       if (!fresh) {
-        throw new ApiError(404, 'Ticket not found');
+        throw new ApiError(404, 'التذكرة غير موجودة');
       }
       assertActiveTicketAccess(fresh, now);
 
@@ -532,13 +538,13 @@ async function resolveOriginalBookingReceipt(ticketId, { required = true } = {})
   }).lean();
 
   if (events.length > 1) {
-    throw new ApiError(409, 'Ambiguous booking receipt');
+    throw new ApiError(409, 'إيصال الحجز غير واضح');
   }
 
   const booked = events[0];
   if (!booked || !booked.receipt) {
     if (required) {
-      throw new ApiError(404, 'Booking receipt not found');
+      throw new ApiError(404, 'إيصال الحجز غير موجود');
     }
     return null;
   }

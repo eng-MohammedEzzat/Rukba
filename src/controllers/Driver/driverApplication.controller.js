@@ -6,12 +6,12 @@ const driverApplicationService = require('../../services/Driver/driverApplicatio
 
 const listApplications = asyncHandler(async (req, res) => {
   const applications = await driverApplicationService.listApplications(req.validatedQuery);
-  return apiResponse(res, { message: 'Driver applications', data: applications });
+  return apiResponse(res, { message: 'طلبات انضمام السائقين', data: applications });
 });
 
 const getApplication = asyncHandler(async (req, res) => {
   const application = await driverApplicationService.getApplication(req.params.applicationId);
-  return apiResponse(res, { message: 'Driver application', data: application });
+  return apiResponse(res, { message: 'طلب انضمام السائق', data: application });
 });
 
 const decideApplication = asyncHandler(async (req, res) => {
@@ -20,7 +20,7 @@ const decideApplication = asyncHandler(async (req, res) => {
     req.user._id,
     req.body
   );
-  return apiResponse(res, { message: 'Driver application decided', data: decision });
+  return apiResponse(res, { message: 'تم البت في طلب انضمام السائق', data: decision });
 });
 
 module.exports = { listApplications, getApplication, decideApplication };

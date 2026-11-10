@@ -6,7 +6,7 @@ const driverProfileService = require('../../services/Driver/driverProfile.servic
 
 const getProfile = asyncHandler(async (req, res) => {
   const driverProfile = await driverProfileService.getDriverProfile(req.user);
-  return apiResponse(res, { message: 'Driver profile', data: driverProfile });
+  return apiResponse(res, { message: 'الملف الشخصي للسائق', data: driverProfile });
 });
 
 const updateProfile = asyncHandler(async (req, res) => {
@@ -14,7 +14,7 @@ const updateProfile = asyncHandler(async (req, res) => {
     req.user._id,
     req.body.fullName
   );
-  return apiResponse(res, { message: 'Driver profile updated', data: driverProfile });
+  return apiResponse(res, { message: 'تم تحديث الملف الشخصي للسائق', data: driverProfile });
 });
 
 module.exports = { getProfile, updateProfile };

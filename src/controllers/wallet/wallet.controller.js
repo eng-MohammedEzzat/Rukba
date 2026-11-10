@@ -7,7 +7,7 @@ const walletService = require('../../services/wallet/wallet.service');
 const getWallet = asyncHandler(async (req, res) => {
   const data = await walletService.getWallet(req.user._id, req.user.role);
   return apiResponse(res, {
-    message: 'OK',
+    message: 'تمت العملية بنجاح',
     data,
   });
 });
@@ -18,7 +18,7 @@ const listTransactions = asyncHandler(async (req, res) => {
     req.validatedQuery || {}
   );
   return apiResponse(res, {
-    message: 'OK',
+    message: 'تمت العملية بنجاح',
     data,
   });
 });
@@ -27,7 +27,7 @@ const topUp = asyncHandler(async (req, res) => {
   const data = await walletService.topUp(req.user, req.body);
   return apiResponse(res, {
     statusCode: 201,
-    message: 'Wallet topped up',
+    message: 'تم شحن المحفظة بنجاح',
     data,
   });
 });
@@ -36,7 +36,7 @@ const requestPayout = asyncHandler(async (req, res) => {
   const data = await walletService.requestPayout(req.user, req.body);
   return apiResponse(res, {
     statusCode: 201,
-    message: 'Payout completed',
+    message: 'تم صرف المبلغ بنجاح',
     data,
   });
 });

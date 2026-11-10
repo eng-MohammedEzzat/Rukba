@@ -6,7 +6,7 @@ const driverEarningService = require('../../services/Driver/driverEarning.servic
 
 const getEarnings = asyncHandler(async (req, res) => {
   const earnings = await driverEarningService.getEarnings(req.user._id, req.validatedQuery);
-  return apiResponse(res, { message: 'Driver earnings retrieved', data: earnings });
+  return apiResponse(res, { message: 'تم جلب أرباح السائق', data: earnings });
 });
 
 module.exports = { getEarnings };

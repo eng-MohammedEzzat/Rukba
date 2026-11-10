@@ -10,7 +10,7 @@ const saveRoute = asyncHandler(async (req, res) => {
   });
   return apiResponse(res, {
     statusCode: result.created ? 201 : 200,
-    message: result.created ? 'Route saved' : 'Route already saved',
+    message: result.created ? 'تم حفظ خط السير' : 'خط السير محفوظ مسبقًا',
     data: {
       savedRoute: result.savedRoute,
       created: result.created,
@@ -24,7 +24,7 @@ const listSavedRoutes = asyncHandler(async (req, res) => {
     req.validatedQuery || {}
   );
   return apiResponse(res, {
-    message: 'OK',
+    message: 'تمت العملية بنجاح',
     data,
   });
 });
@@ -35,7 +35,7 @@ const removeSavedRoute = asyncHandler(async (req, res) => {
     req.params.routeId
   );
   return apiResponse(res, {
-    message: 'Saved route removed',
+    message: 'تمت إزالة خط السير المحفوظ',
     data: { savedRoute },
   });
 });

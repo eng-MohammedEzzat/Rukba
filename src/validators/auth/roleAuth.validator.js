@@ -1,6 +1,6 @@
 'use strict';
 
-const { z } = require('zod');
+const { z } = require('../../config/zod');
 
 const phoneSchema = z.string().trim().min(8).max(20);
 const usernameSchema = z
@@ -18,7 +18,7 @@ const roleLoginSchema = z
   })
   .strict()
   .refine((credentials) => Boolean(credentials.phone) !== Boolean(credentials.username), {
-    message: 'Provide exactly one phone or username.',
+    message: 'يرجى إدخال رقم الهاتف أو اسم المستخدم، وليس كليهما.',
   });
 
 const roleRefreshSchema = z

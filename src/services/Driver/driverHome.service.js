@@ -23,7 +23,7 @@ const MAX_TRANSIENT_RETRIES = 2;
 const MAX_SAFE = Number.MAX_SAFE_INTEGER;
 
 function unavailable() {
-  return new ApiError(503, 'Driver home is temporarily unavailable', {
+  return new ApiError(503, 'الصفحة الرئيسية للسائق غير متاحة مؤقتًا', {
     code: 'TEMPORARILY_UNAVAILABLE',
   });
 }
@@ -39,7 +39,7 @@ async function assertEligible(db, driverId, session) {
     { session }
   );
   if (!isEligibleDriver(user, profile)) {
-    throw new ApiError(403, 'Driver is not eligible to operate', { code: 'DRIVER_INELIGIBLE' });
+    throw new ApiError(403, 'السائق غير مؤهل للعمل حاليًا', { code: 'DRIVER_INELIGIBLE' });
   }
 }
 

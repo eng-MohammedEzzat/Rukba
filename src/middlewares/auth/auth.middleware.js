@@ -9,7 +9,7 @@ const authenticate = asyncHandler(async (req, _res, next) => {
   const header = req.headers.authorization || '';
   const [scheme, token] = header.split(' ');
   if (scheme !== 'Bearer' || !token) {
-    throw new ApiError(401, 'Invalid or expired access token');
+    throw new ApiError(401, 'رمز الدخول غير صالح أو منتهي الصلاحية');
   }
 
   let payload;
@@ -17,18 +17,18 @@ const authenticate = asyncHandler(async (req, _res, next) => {
     payload = verifyAccessToken(token);
   } catch (err) {
     if (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError') {
-      throw new ApiError(401, 'Invalid or expired access token');
+      throw new ApiError(401, 'رمز الدخول غير صالح أو منتهي الصلاحية');
     }
     throw err;
   }
 
   const user = await User.findById(payload.sub);
   if (!user || user.isDeleted || user.status !== 'active') {
-    throw new ApiError(401, 'User not found or inactive');
+    throw new ApiError(401, 'المستخدم غير موجود أو غير مفعّل');
   }
 
   if (payload.role && payload.role !== user.role) {
-    throw new ApiError(401, 'Invalid or expired access token');
+    throw new ApiError(401, 'رمز الدخول غير صالح أو منتهي الصلاحية');
   }
 
   req.user = user;

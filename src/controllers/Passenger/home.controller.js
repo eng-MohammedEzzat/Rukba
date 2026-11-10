@@ -7,7 +7,7 @@ const homeService = require('../../services/Passenger/home.service');
 const getHome = asyncHandler(async (req, res) => {
   const homeData = await homeService.getHomeData(req.user);
   return apiResponse(res, {
-    message: 'OK',
+    message: 'تمت العملية بنجاح',
     data: homeData,
   });
 });

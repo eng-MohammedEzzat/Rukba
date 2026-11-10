@@ -1,6 +1,6 @@
 'use strict';
 
-const { z } = require('zod');
+const { z } = require('../../config/zod');
 const { WALLET_PROVIDERS, WALLET_TRANSACTION_TYPES } = require('../../constants/enums');
 
 /** 1 ILS to 1,000 ILS, in agorot */
