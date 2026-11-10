@@ -29,7 +29,6 @@ const complete = asyncHandler(async (req, res) => {
     req.user._id,
     req.params.tripId,
     'complete',
-    req.body.operationId
   );
   return apiResponse(res, { message: 'تم إنهاء الرحلة بنجاح', data: completedRun });
 });

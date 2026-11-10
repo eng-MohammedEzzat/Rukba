@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const mongoose = require('mongoose');
 const { User, DriverProfile, Ticket, Trip, ActionHistory } = require('../../models');
 const ApiError = require('../../utils/shared/ApiError');
+const { createOperationId } = require('../../utils/shared/operationId');
 const { verifyPresentedQrToken } = require('../../utils/ticket/qrToken');
 const { isEligibleDriver } = require('../../utils/trip/driverTripEligibility');
 const { runJourneyDisplay, storedJourneyDisplay } = require('../../utils/trip/journeyDisplay');
@@ -37,10 +38,6 @@ function conflict(code, message, statusCode = 409) {
 
 function fingerprint(tokenHash) {
   return crypto.createHash('sha256').update(JSON.stringify(['ticket_used', tokenHash])).digest('hex');
-}
-
-function createOperationId() {
-  return crypto.randomUUID();
 }
 
 function isTransientTransactionError(error) {

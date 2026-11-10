@@ -11,7 +11,7 @@ const previewTicket = asyncHandler(async (req, res) => {
 
 const validateTicket = asyncHandler(async (req, res) => {
   const validation = await ticketValidationService.validateTicket(req.user._id, req.body);
-  return apiResponse(res, { message: 'تم التحقق من التذكرة بنجاح', data: validation });
+  return apiResponse(res, { message: 'تم مسح التذكرة بنجاح', data: validation });
 });
 
 module.exports = { previewTicket, validateTicket };

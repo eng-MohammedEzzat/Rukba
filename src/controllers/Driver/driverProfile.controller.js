@@ -10,9 +10,10 @@ const getProfile = asyncHandler(async (req, res) => {
 });
 
 const updateProfile = asyncHandler(async (req, res) => {
-  const driverProfile = await driverProfileService.updateDriverFullName(
-    req.user._id,
-    req.body.fullName
+  const driverProfile = await driverProfileService.updateDriverProfile(
+    req.user,
+    req.body,
+    req.file
   );
   return apiResponse(res, { message: 'تم تحديث الملف الشخصي للسائق', data: driverProfile });
 });

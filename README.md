@@ -142,7 +142,7 @@ Driver phase D1 provides public Driver signup, fixed-role Driver/admin login, ro
 | POST | `/api/v1/driver/auth/refresh` | Rotate a Driver refresh token |
 | POST | `/api/v1/driver/auth/logout` | Revoke one Driver session family |
 | POST | `/api/v1/driver/auth/logout-all` | Revoke all Driver refresh sessions; Driver bearer token required |
-| GET/PATCH | `/api/v1/driver/profile` | Read own profile / update only `fullName` |
+| GET/PATCH | `/api/v1/driver/profile` | Read own profile / update `fullName`, `username`, or `image` (multipart); phone, ID, license, and vehicle stay locked |
 | POST | `/api/v1/admin/auth/login` | Admin-only login |
 | POST | `/api/v1/admin/auth/refresh` | Rotate an admin refresh token |
 | POST | `/api/v1/admin/auth/logout` | Revoke one admin session family |
@@ -163,15 +163,15 @@ Pending snapshot backfill is a separate audited choice; its timestamp records wh
 
 ## Driver Route and Trip runs (D2 verification)
 
-An active, verified Driver with a complete profile can list active Routes, create one in-progress run at a time (selecting a Route starts it), read owned runs, and complete it. Different Drivers may create separate runs on one Route. Trip mutation bodies require a distinct `operationId`; an exact successful retry returns the stored outcome. A ticket scan sends only the QR token, and the server records its own operation id. All endpoints require a Driver bearer token.
+An active, verified Driver with a complete profile can list active Routes, create one in-progress run at a time (selecting a Route starts it), read owned runs, and complete it. Different Drivers may create separate runs on one Route. Clients do not send an `operationId`; the server records its own. Retrying a start with the same `routeId` and `vehicleLabel` while that run is active returns it with `replayed: true` (a different start returns `409`), and retrying a completion returns the stored outcome. A ticket scan sends only the QR token. All endpoints require a Driver bearer token.
 
 | Method | Path | Notes |
 |--------|------|-------|
 | GET | `/api/v1/driver/routes` | Active Routes; `page` 1+, `limit` 1–50, optional exact origin/destination filters |
-| POST | `/api/v1/driver/trips` | `{ "routeId", "operationId" }`; creates the run already started |
+| POST | `/api/v1/driver/trips` | `{ "routeId", "vehicleLabel"? }`; creates the run already started |
 | GET | `/api/v1/driver/trips/current` | Current run or `trip:null` |
 | GET | `/api/v1/driver/trips/:tripId` | Owned current or historical run |
-| POST | `/api/v1/driver/trips/:tripId/complete` | `{ "operationId" }`; ends the active run |
+| POST | `/api/v1/driver/trips/:tripId/complete` | No body; ends the active run |
 | POST | `/api/v1/driver/tickets/scan` | `{ "qrToken" }`; consumes one exact-run Ticket while boarding or in progress |
 | GET | `/api/v1/driver/activity` | Owner-only retained history plus full-scope operational totals; `page` 1–100000, `limit` 1–50, optional exact `status` and exclusive UTC `start`/`end` |
 | GET | `/api/v1/driver/earnings` | Owner-only UTC month report; required `month=YYYY-MM`, optional `status=accrued|paid`, `page` 1–100000, `limit` 1–50 |

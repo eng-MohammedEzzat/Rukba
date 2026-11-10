@@ -12,7 +12,6 @@ const rejectNonemptyBody = require('../../../middlewares/shared/emptyBody.middle
 const {
   routeQuerySchema,
   createTripSchema,
-  operationSchema,
   tripParamsSchema,
 } = require('../../../validators/trip/driverTrip.validator');
 const { activityQuerySchema } = require('../../../validators/Driver/driverActivity.validator');
@@ -35,7 +34,6 @@ router.get('/trips/:tripId', validate(tripParamsSchema, 'params'), driverTripCon
 router.post(
   '/trips/:tripId/complete',
   validate(tripParamsSchema, 'params'),
-  validate(operationSchema),
   driverTripController.complete
 );
 

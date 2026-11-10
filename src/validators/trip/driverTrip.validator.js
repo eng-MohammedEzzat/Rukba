@@ -4,7 +4,6 @@ const { z } = require('../../config/zod');
 const { LABEL_MAX_LENGTH, LABEL_PATTERN } = require('../../utils/trip/journeyDisplay');
 
 const objectId = z.string().regex(/^[a-fA-F0-9]{24}$/, 'المعرّف غير صالح');
-const operationId = z.string().trim().min(1).max(128).regex(/^[A-Za-z0-9._:-]+$/);
 const positiveInt = z.string().regex(/^[1-9][0-9]*$/).transform(Number).pipe(z.number().int().safe());
 const vehicleLabel = z.string().trim().min(1).max(LABEL_MAX_LENGTH).regex(LABEL_PATTERN);
 const routeQuerySchema = z.object({
@@ -15,10 +14,8 @@ const routeQuerySchema = z.object({
 }).strict();
 const createTripSchema = z.object({
   routeId: objectId,
-  operationId,
   vehicleLabel: vehicleLabel.optional(),
 }).strict();
-const operationSchema = z.object({ operationId }).strict();
 const tripParamsSchema = z.object({ tripId: objectId }).strict();
 
-module.exports = { routeQuerySchema, createTripSchema, operationSchema, tripParamsSchema };
+module.exports = { routeQuerySchema, createTripSchema,  tripParamsSchema };

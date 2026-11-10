@@ -9,6 +9,7 @@ const { calculateEarning } = require('../../utils/Driver/earningCalculator');
 const { earningSnapshotsMatch } = require('../../utils/Driver/earningSnapshotsMatch');
 const { createRunFingerprint, lifecycleFingerprint } = require('../../utils/trip/driverTripFingerprint');
 const { routeCatalogDisplay, runJourneyDisplay } = require('../../utils/trip/journeyDisplay');
+const { createOperationId } = require('../../utils/shared/operationId');
 const walletService = require('../wallet/wallet.service');
 
 const MAX_SAFE = Number.MAX_SAFE_INTEGER;
@@ -115,17 +116,34 @@ async function listRoutes(query) {
   };
 }
 
-async function createRun(driverId, { routeId, operationId, vehicleLabel }) {
+/**
+ * A repeated start for the same route and vehicle label returns the driver's
+ * active run; any other start while a run is active is a conflict.
+ */
+async function replayActiveRun(driverId, inputFingerprint, session) {
+  const tripQuery = Trip.findOne({ driver: driverId, driverActive: true, isDeleted: false });
+  const active = await (session ? tripQuery.session(session) : tripQuery).lean();
+  if (!active) return null;
+  const eventQuery = ActionHistory.findOne({
+    actor: driverId, trip: active._id, actionType: 'trip_created',
+  });
+  const created = await (session ? eventQuery.session(session) : eventQuery).lean();
+  if (created?.inputFingerprint !== inputFingerprint) {
+    throw conflict('ACTIVE_TRIP_EXISTS', 'لدى السائق رحلة نشطة بالفعل');
+  }
+  return { trip: toPublicDriverTrip(active), replayed: true, occurredAt: created.occurredAt };
+}
+
+async function createRun(driverId, { routeId, vehicleLabel }) {
+  const operationId = createOperationId();
   const inputFingerprint = createRunFingerprint(routeId, vehicleLabel);
-  const existing = await findReplay(driverId, operationId, inputFingerprint);
-  if (existing) return existing;
   try {
     return await transaction((session) => createRunInTransaction({
       session, driverId, routeId, operationId, inputFingerprint, vehicleLabel,
     }));
   } catch (error) {
     if (error.code === 11000) {
-      const replay = await findReplay(driverId, operationId, inputFingerprint);
+      const replay = await replayActiveRun(driverId, inputFingerprint);
       if (replay) return replay;
       throw conflict('ACTIVE_TRIP_EXISTS', 'لدى السائق رحلة نشطة بالفعل');
     }
@@ -136,11 +154,9 @@ async function createRun(driverId, { routeId, operationId, vehicleLabel }) {
 async function createRunInTransaction({
   session, driverId, routeId, operationId, inputFingerprint, vehicleLabel,
 }) {
-  const replay = await findReplay(driverId, operationId, inputFingerprint, session);
-  if (replay) return replay;
   const profile = await eligibleInSession(driverId, session);
-  const current = await Trip.exists({ driver: driverId, driverActive: true }).session(session);
-  if (current) throw conflict('ACTIVE_TRIP_EXISTS', 'لدى السائق رحلة نشطة بالفعل');
+  const replay = await replayActiveRun(driverId, inputFingerprint, session);
+  if (replay) return replay;
   const route = await touchActiveRoute(routeId, session);
   if (!route) throw new ApiError(404, 'خط السير غير موجود', { code: 'ROUTE_NOT_FOUND' });
   const catalog = routeCatalogDisplay(route);
@@ -203,8 +219,9 @@ function expectedEarningSnapshot(calculation, driverId, trip) {
   };
 }
 
-async function transitionRun(driverId, tripId, action, operationId) {
+async function transitionRun(driverId, tripId, action) {
   const rule = TRANSITIONS[action];
+  const operationId = `${rule.actionType}:${tripId}`;
   const inputFingerprint = lifecycleFingerprint(rule.actionType, tripId);
   const existing = await findReplay(driverId, operationId, inputFingerprint);
   if (existing) return existing;
@@ -235,6 +252,8 @@ async function transitionRun(driverId, tripId, action, operationId) {
           continue;
         }
       }
+      const replay = await findReplay(driverId, operationId, inputFingerprint);
+      if (replay) return replay;
       throw error;
     }
   }
