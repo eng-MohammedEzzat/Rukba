@@ -3,9 +3,13 @@
 const mongoose = require('mongoose');
 const { asObjectIdString } = require('./earningIntegrity');
 
-async function duplicateTripIds(db, rows, session) {
-  const tripIds = [...new Set(rows.map((row) => asObjectIdString(row.trip)).filter(Boolean))]
+function tripObjectIds(rows) {
+  return [...new Set(rows.map((row) => asObjectIdString(row.trip)).filter(Boolean))]
     .map((id) => new mongoose.Types.ObjectId(id));
+}
+
+async function duplicateTripIds(db, rows, session) {
+  const tripIds = tripObjectIds(rows);
   if (!tripIds.length) return new Set();
   const counts = await db.collection('earnings').aggregate([
     { $match: { trip: { $in: tripIds } } },
@@ -16,8 +20,7 @@ async function duplicateTripIds(db, rows, session) {
 }
 
 async function loadTripOwners(db, rows, session) {
-  const tripIds = [...new Set(rows.map((row) => asObjectIdString(row.trip)).filter(Boolean))]
-    .map((id) => new mongoose.Types.ObjectId(id));
+  const tripIds = tripObjectIds(rows);
   if (!tripIds.length) return new Map();
   const trips = await db.collection('trips').find(
     { _id: { $in: tripIds } },

@@ -5,6 +5,8 @@ const ApiError = require('../shared/ApiError');
 const MAX_SAFE = Number.MAX_SAFE_INTEGER;
 const ACCEPTED_CURRENCIES = Object.freeze(['ILS']);
 const POLICY_VERSION = 'driver-earnings-v1';
+const TRIGGER = 'trip_completed';
+const PAYMENT_TREATMENT = 'used_regardless_of_unpaid_or_waived';
 
 function sourceInconsistent(message) {
   return new ApiError(409, message, { code: 'EARNING_SOURCE_INCONSISTENT' });
@@ -80,8 +82,8 @@ function calculateEarning({ tickets = [], ticketsUsed, completedAt, tripId } = {
     currency,
     feeBasisPoints: 0,
     policyVersion: POLICY_VERSION,
-    trigger: 'trip_completed',
-    paymentTreatment: 'used_regardless_of_unpaid_or_waived',
+    trigger: TRIGGER,
+    paymentTreatment: PAYMENT_TREATMENT,
     status: 'accrued',
     accruedAt: completedAt,
     periodKey: utcPeriodKey(completedAt),
@@ -89,6 +91,10 @@ function calculateEarning({ tickets = [], ticketsUsed, completedAt, tripId } = {
 }
 
 module.exports = {
+  ACCEPTED_CURRENCIES,
+  POLICY_VERSION,
+  TRIGGER,
+  PAYMENT_TREATMENT,
   calculateEarning,
   utcPeriodKey,
   isSafeNonNegativeInteger,

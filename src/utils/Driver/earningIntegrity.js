@@ -1,12 +1,15 @@
 'use strict';
 
-const { utcPeriodKey, isSafeNonNegativeInteger } = require('./earningCalculator');
+const {
+  ACCEPTED_CURRENCIES,
+  POLICY_VERSION,
+  TRIGGER,
+  PAYMENT_TREATMENT,
+  utcPeriodKey,
+  isSafeNonNegativeInteger,
+} = require('./earningCalculator');
 
-const ACCEPTED_CURRENCIES = Object.freeze(['ILS']);
 const ACCEPTED_STATUSES = Object.freeze(['accrued', 'paid']);
-const SUPPORTED_POLICY = 'driver-earnings-v1';
-const SUPPORTED_TRIGGER = 'trip_completed';
-const SUPPORTED_PAYMENT_TREATMENT = 'used_regardless_of_unpaid_or_waived';
 const PERIOD_KEY = /^[0-9]{4}-(0[1-9]|1[0-2])$/;
 const MAX_SAFE = Number.MAX_SAFE_INTEGER;
 
@@ -110,9 +113,9 @@ function classifyEarning(raw, { ownerId, duplicateTripIds = new Set(), tripOwner
   const grossValid = isSafeNonNegativeInteger(raw?.grossMinor);
   const feeValid = isSafeNonNegativeInteger(raw?.platformFeeMinor);
   const netValid = isSafeNonNegativeInteger(raw?.netMinor);
-  const policySupported = raw?.policyVersion === SUPPORTED_POLICY
-    && raw?.trigger === SUPPORTED_TRIGGER
-    && raw?.paymentTreatment === SUPPORTED_PAYMENT_TREATMENT
+  const policySupported = raw?.policyVersion === POLICY_VERSION
+    && raw?.trigger === TRIGGER
+    && raw?.paymentTreatment === PAYMENT_TREATMENT
     && raw?.feeBasisPoints === 0;
   if (!grossValid || !feeValid || !netValid || !policySupported) {
     warnings.push(warning('AMOUNT_UNAVAILABLE', [
@@ -187,8 +190,8 @@ function classifyEarning(raw, { ownerId, duplicateTripIds = new Set(), tripOwner
       currency: usable && currency != null ? currency : null,
     },
     status: usable ? status : null,
-    accruedAt: accruedAt && (usable || attributable) ? accruedAt.toISOString() : null,
-    period: periodAgreed && usable ? periodKey : (periodAgreed ? periodKey : null),
+    accruedAt: accruedAt && attributable ? accruedAt.toISOString() : null,
+    period: periodAgreed ? periodKey : null,
     policyVersion: typeof raw?.policyVersion === 'string' ? raw.policyVersion : null,
     currency,
     groupable: usable && currency != null && status != null,

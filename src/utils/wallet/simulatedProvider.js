@@ -1,17 +1,9 @@
 'use strict';
 
-const crypto = require('crypto');
-
-const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-const REFERENCE_LENGTH = 10;
+const randomCode = require('../shared/randomCode');
 
 function generateProviderReference() {
-  const bytes = crypto.randomBytes(REFERENCE_LENGTH);
-  let out = '';
-  for (let i = 0; i < REFERENCE_LENGTH; i += 1) {
-    out += ALPHABET[bytes[i] % ALPHABET.length];
-  }
-  return `SIM-${out}`;
+  return `SIM-${randomCode(10)}`;
 }
 
 /**
@@ -29,5 +21,4 @@ function disburse({ provider, amountMinor }) {
 module.exports = {
   collect,
   disburse,
-  generateProviderReference,
 };

@@ -4,7 +4,7 @@ const { z } = require('zod');
 const { WALLET_PROVIDERS, WALLET_TRANSACTION_TYPES } = require('../../constants/enums');
 
 /** 1 ILS to 1,000 ILS, in agorot */
-const amountMinor = z.coerce.number().int().min(100).max(100000);
+const amountMinor = z.coerce.number().int().min(5).max(100000);
 
 const topUpSchema = z.object({
   amountMinor,

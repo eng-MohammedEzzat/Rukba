@@ -199,7 +199,7 @@ All ticket routes below require `Authorization: Bearer <accessToken>` and the pa
 
 | Method | Path | Notes |
 |--------|------|--------|
-| GET | `/api/v1/home` | First-screen payload: public user and active routes |
+| GET | `/api/v1/home` | First-screen payload: public `user` and the passenger's `savedRoutes` (newest first, up to 20) |
 | GET | `/api/v1/routes` | Active route catalog (origin/destination picker); passenger-authenticated |
 | POST | `/api/v1/saved-routes` | Save an active Route with `{ "routeId", "address"? }` (`address`: optional passenger label, max 120 chars); idempotent if already saved |
 | GET | `/api/v1/saved-routes` | Owner-scoped saved routes; optional `page` / `limit` |

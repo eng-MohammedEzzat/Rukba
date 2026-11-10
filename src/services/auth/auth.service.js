@@ -108,6 +108,9 @@ const loginPassenger= async ({ phone, username, password }, meta = {})=> {
       usernameNormalized: normalizeUsername(username),
     }).select('+passwordHash');
   }
+  if (user?.isDeleted) {
+    user = null;
+  }
 
   if (user) {
     restrictionKeys.push({ key: `acct:${user._id}`, scope: 'account' });
@@ -128,11 +131,14 @@ const loginPassenger= async ({ phone, username, password }, meta = {})=> {
       throw new ApiError(401, 'Invalid credentials');
     }
 
+    if (user.role !== 'passenger') {
+      throw new ApiError(403, 'Only passenger accounts can sign in here');
+    }
+
     if (user.status !== 'active') {
       throw new ApiError(403, 'Account is not active');
     }
 
-    
     activePassenger = true;
   } finally {
     await completeAttempt(reservations, {
@@ -175,7 +181,7 @@ const refreshTokens=async  (rawRefreshToken, meta)=> {
 
 const logout=async  (rawRefreshToken)=> {
   const tokenHash = hashToken(rawRefreshToken);
-  await RefreshToken.deleteOne({ tokenHash });
+  await RefreshToken.deleteOne(withRoleFilter({ tokenHash }, 'passenger'));
   return { revoked: true };
 }
 
