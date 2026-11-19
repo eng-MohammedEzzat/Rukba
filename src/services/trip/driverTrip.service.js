@@ -11,6 +11,10 @@ const { createRunFingerprint, lifecycleFingerprint } = require('../../utils/trip
 const { routeCatalogDisplay, runJourneyDisplay } = require('../../utils/trip/journeyDisplay');
 const { createOperationId } = require('../../utils/shared/operationId');
 const walletService = require('../wallet/wallet.service');
+const {
+  ensureNotificationCollection,
+  recordTripCompletedNotification,
+} = require('../shared/notification.service');
 
 const MAX_SAFE = Number.MAX_SAFE_INTEGER;
 const MAX_COMPLETION_RETRIES = 2;
@@ -225,7 +229,10 @@ async function transitionRun(driverId, tripId, action) {
   const inputFingerprint = lifecycleFingerprint(rule.actionType, tripId);
   const existing = await findReplay(driverId, operationId, inputFingerprint);
   if (existing) return existing;
-  if (action === 'complete') await walletService.ensureWalletCollections();
+  if (action === 'complete') {
+    await walletService.ensureWalletCollections();
+    await ensureNotificationCollection();
+  }
   let attempt = 0;
   while (true) {
     try {
@@ -302,7 +309,7 @@ async function creditDriverWallet({ session, driverId, trip, earning, usedTicket
   for (const ticket of usedTickets) {
     if (ticket.paymentStatus === 'paid') paidMinor += ticket.fareMinor;
   }
-  if (paidMinor <= 0) return;
+  if (paidMinor <= 0) return 0;
   await walletService.credit({
     userId: driverId,
     ownerRole: 'driver',
@@ -311,6 +318,7 @@ async function creditDriverWallet({ session, driverId, trip, earning, usedTicket
     refs: { trip: trip._id, earning: earning._id },
     session,
   });
+  return paidMinor;
 }
 
 async function transitionInTransaction({ session, driverId, tripId, action,
@@ -324,6 +332,7 @@ async function transitionInTransaction({ session, driverId, tripId, action,
   const occurredAt = new Date();
   const startedAt = trip.startedAt || occurredAt;
   let calculation = null;
+  let creditedMinor = 0;
   if (action === 'complete') {
     const usedTickets = await Ticket.find({ trip: trip._id, status: 'used' })
       .select('_id fareMinor currency status trip paymentStatus')
@@ -367,7 +376,7 @@ async function transitionInTransaction({ session, driverId, tripId, action,
           if (error.code !== 11000) throw error;
           throw conflict('EARNING_CONFLICT', 'توجد أرباح غير متوافقة مسجّلة لهذه الرحلة');
         }
-        await creditDriverWallet({ session, driverId, trip, earning, usedTickets });
+        creditedMinor = await creditDriverWallet({ session, driverId, trip, earning, usedTickets });
       }
     }
   }
@@ -378,6 +387,9 @@ async function transitionInTransaction({ session, driverId, tripId, action,
   if (action === 'complete') {
     if (writeBarriers.beforeDriverCount) await writeBarriers.beforeDriverCount();
     await incrementCompletedTrips(driverId, session);
+    await recordTripCompletedNotification(session, {
+      driverId, trip: changed, ticketCount: calculation?.ticketCount ?? 0, creditedMinor,
+    });
   }
   const reply = { trip: toPublicDriverTrip(changed), replayed: false, occurredAt };
   if (writeBarriers.beforeEventWrite) await writeBarriers.beforeEventWrite();

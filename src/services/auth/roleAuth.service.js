@@ -9,16 +9,14 @@ const { normalizePhone } = require('../../utils/auth/phone');
 const { normalizeUsername } = require('../../utils/auth/username');
 const { reserveAttempt, completeAttempt } = require('./authThrottle.service');
 const { createRoleSession } = require('./session.service');
+const { phoneNotVerifiedError } = require('./phoneVerification.service');
 
+/** Sign-in uses the username only; the phone lookup serves admin-code password resets. */
 async function findUserByIdentifier(identifier) {
-  if (identifier.phone) {
-    return User.findOne({ phone: normalizePhone(identifier.phone) }).select(
-      '+passwordHash'
-    );
-  }
-  return User.findOne({
-    usernameNormalized: normalizeUsername(identifier.username),
-  }).select('+passwordHash');
+  const filter = identifier.username
+    ? { usernameNormalized: normalizeUsername(identifier.username) }
+    : { phone: normalizePhone(identifier.phone) };
+  return User.findOne(filter).select('+passwordHash');
 }
 
 function isEligibleRoleAccount(user, role) {
@@ -48,6 +46,9 @@ async function loginRole(role, credentials, meta = {}) {
       failedCredentials = true;
       throw roleApiError(401, 'بيانات الدخول غير صحيحة', 'INVALID_CREDENTIALS');
     }
+    if (!user.phoneVerified) {
+      throw phoneNotVerifiedError(user);
+    }
 
     const profile = role === 'driver' ? await DriverProfile.findOne({ user: user._id }) : null;
     const session = await createRoleSession(user._id, role, meta);
@@ -69,4 +70,4 @@ async function loginRole(role, credentials, meta = {}) {
   }
 }
 
-module.exports = { loginRole };
+module.exports = { loginRole, findUserByIdentifier };

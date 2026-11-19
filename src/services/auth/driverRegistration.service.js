@@ -11,6 +11,10 @@ const { toPublicDriver } = require('../Driver/driverProfile.service');
 const { normalizePhone } = require('../../utils/auth/phone');
 const { normalizeUsername } = require('../../utils/auth/username');
 const { runInTransaction } = require('../../utils/shared/runInTransaction');
+const {
+  initialPhoneVerified,
+  startPhoneVerification,
+} = require('./phoneVerification.service');
 
 const registrationError= (err)=> {
   if (err.code === 11000) {
@@ -49,6 +53,7 @@ const registerDriver=async  (input, imageFile)=> {
           {
             _id: userId,
             phone,
+            phoneVerified: initialPhoneVerified(),
             username: input.username,
             usernameNormalized,
             passwordHash,
@@ -91,7 +96,8 @@ const registerDriver=async  (input, imageFile)=> {
     throw registrationError(err);
   }
 
-  return toPublicDriver(user, profile);
+  const phoneVerification = await startPhoneVerification(user);
+  return { ...toPublicDriver(user, profile), phoneVerification };
 }
 
 module.exports = { registerDriver };

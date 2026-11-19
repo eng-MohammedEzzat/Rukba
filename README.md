@@ -79,8 +79,10 @@ Phone numbers may be entered in local Palestinian form (`0599…`) or internatio
 
 | Method | Path | Notes |
 |--------|------|--------|
-| POST | `/api/v1/auth/register` | Creates passenger; returns user + tokens |
-| POST | `/api/v1/auth/login` | Phone **or** username + password; passengers only; temporary `429` lockouts |
+| POST | `/api/v1/auth/register` | Creates passenger; returns user + `phoneVerification`, no tokens until the phone is verified |
+| POST | `/api/v1/auth/register/verify-phone` | `{ "phone", "code" }`; marks the phone verified, then log in |
+| POST | `/api/v1/auth/login` | `{ "username", "password" }` only; passengers only; temporary `429` lockouts |
+| POST | `/api/v1/auth/password/forgot/reset` | `{ "phone", "code", "newPassword" }`; `code` is the fixed OTP |
 | POST | `/api/v1/auth/refresh` | Body `{ "refreshToken" }`; each token succeeds at most once |
 | POST | `/api/v1/auth/logout` | Body `{ "refreshToken" }` |
 | POST | `/api/v1/auth/logout-all` | Bearer access token |
@@ -101,6 +103,12 @@ AUTH_FAIL_WINDOW_MS=900000
 
 Set `TRUST_PROXY=true` only when the API sits behind a reverse proxy so `req.ip` is the client address.
 
+### Phone verification
+
+No SMS is sent. Phone verification and forgot-password reset both accept one fixed 6-digit OTP, `FIXED_OTP_CODE` (default `111111`). Anyone who knows it can verify any phone or reset any password by phone, so treat it as a development-only shortcut.
+
+Passenger and Driver self-registration creates the account with `phoneVerified: false`. The response carries `phoneVerification: { "required": true }`. Login with the correct password is refused with `403 PHONE_NOT_VERIFIED` (with `data.phone`) until `POST …/register/verify-phone` succeeds with the fixed OTP. Wrong codes count toward the per-account and per-IP sign-in throttle. Accounts created any other way (seeds, existing data, admins) count as verified. `PHONE_VERIFICATION_ENABLED=false` skips the step.
+
 ### Migration
 
 Existing user documents must be unique on normalized phone and case-insensitive username before the new unique index is used in production:
@@ -117,9 +125,11 @@ Quick check (PowerShell):
 # Register
 Invoke-RestMethod -Method POST -Uri http://127.0.0.1:3000/api/v1/auth/register -ContentType application/json -Body '{"phone":"+970599111111","username":"sara_new","password":"Password123!","fullName":"Sara"}'
 
-# Login (seed passenger) — phone or username
-$login = Invoke-RestMethod -Method POST -Uri http://127.0.0.1:3000/api/v1/auth/login -ContentType application/json -Body '{"phone":"+970599000003","password":"Password123!"}'
-# or: '{"username":"sara_passenger","password":"Password123!"}'
+# Verify the new phone with the fixed OTP
+Invoke-RestMethod -Method POST -Uri http://127.0.0.1:3000/api/v1/auth/register/verify-phone -ContentType application/json -Body '{"phone":"+970599111111","code":"111111"}'
+
+# Login (seed passenger) — username + password
+$login = Invoke-RestMethod -Method POST -Uri http://127.0.0.1:3000/api/v1/auth/login -ContentType application/json -Body '{"username":"sara_passenger","password":"Password123!"}'
 $token = $login.data.accessToken
 
 # Me / profile
@@ -137,11 +147,17 @@ Driver phase D1 provides public Driver signup, fixed-role Driver/admin login, ro
 
 | Method | Path | Notes |
 |--------|------|--------|
-| POST | `/api/v1/driver/auth/register` | Driver signup; returns pending profile, no tokens |
-| POST | `/api/v1/driver/auth/login` | Driver-only login |
+| POST | `/api/v1/driver/auth/register` | Driver signup; returns pending profile + `phoneVerification`, no tokens |
+| POST | `/api/v1/driver/auth/register/verify-phone` | `{ "phone", "code" }`; required before the first Driver login |
+| POST | `/api/v1/driver/auth/login` | Driver-only login with `{ "username", "password" }` |
+| POST | `/api/v1/driver/auth/password/forgot/reset` | `{ "phone", "code", "newPassword" }`; `code` is the fixed OTP |
 | POST | `/api/v1/driver/auth/refresh` | Rotate a Driver refresh token |
 | POST | `/api/v1/driver/auth/logout` | Revoke one Driver session family |
 | POST | `/api/v1/driver/auth/logout-all` | Revoke all Driver refresh sessions; Driver bearer token required |
+| PATCH | `/api/v1/driver/auth/password` | `{ "currentPassword", "newPassword" }`; Driver bearer token required; signs out every session and returns a fresh token pair |
+| POST | `/api/v1/driver/auth/password/reset` | `{ "phone" \| "username", "code", "newPassword" }`; public; uses an admin-issued reset code and signs out every session |
+| GET | `/api/v1/notifications` | Own notifications, newest first (Driver or passenger token) |
+| PATCH | `/api/v1/notifications/:notificationId/read` | Mark one own notification read |
 | GET/PATCH | `/api/v1/driver/profile` | Read own profile / update `fullName`, `username`, or `image` (multipart); phone, ID, license, and vehicle stay locked |
 | POST | `/api/v1/admin/auth/login` | Admin-only login |
 | POST | `/api/v1/admin/auth/refresh` | Rotate an admin refresh token |
@@ -150,6 +166,34 @@ Driver phase D1 provides public Driver signup, fixed-role Driver/admin login, ro
 | GET | `/api/v1/admin/driver-applications` | List pending applications |
 | GET | `/api/v1/admin/driver-applications/:applicationId` | Read an application and its decision |
 | POST | `/api/v1/admin/driver-applications/:applicationId/decision` | Approve or reject once |
+| POST | `/api/v1/admin/drivers/:driverId/password-reset` | No body; issues a one-time Driver reset code (`201`) |
+| GET | `/api/v1/admin/routes` | All routes, including inactive; optional pagination, origin, destination, `isActive`, and search filters |
+| GET | `/api/v1/admin/routes/:routeId` | Read one route including admin-only lifecycle fields |
+| POST | `/api/v1/admin/routes` | Create a route; origin, destination, fare, and estimated duration are required (`201`) |
+| PATCH | `/api/v1/admin/routes/:routeId` | Update route details or active status; does not delete route history |
+
+### Driver password recovery
+
+A Driver who forgets their password can reset it with the fixed OTP (`/driver/auth/password/forgot/reset`, see Phone verification), or contact support: an admin calls `POST /admin/drivers/:driverId/password-reset`, and the admin passes the returned code to the Driver out of band.
+
+- The response is `{ "driver", "code", "expiresAt" }`. The 8-digit code expires after 15 minutes and is stored only as a hash. Issuing a new code replaces the previous one.
+- `POST /driver/auth/password/reset` accepts the code once. After 5 wrong codes the code stops working and the admin must issue a new one. Every failure (unknown account, wrong, expired, used, or exhausted code) returns the same `400 INVALID_RESET_CODE`. Attempts are also rate-limited per IP and per account (`429 TOO_MANY_ATTEMPTS`).
+- A successful change or reset sets the new password, clears any pending reset code, and revokes every refresh token. Access tokens that were already issued are not revoked and stay valid until they expire (`JWT_ACCESS_EXPIRES`, about 15 minutes). `PATCH /driver/auth/password` then returns `{ "accessToken", "refreshToken", "expiresIn" }` so the current device stays signed in. Wrong current password returns `400 INVALID_CURRENT_PASSWORD`, and reusing the current password returns `400 PASSWORD_UNCHANGED`.
+- New passwords must be 8–128 characters.
+
+### Driver notifications
+
+Drivers read their notifications from the shared `/api/v1/notifications` endpoints. Each notification is written in the same transaction as the action that causes it, and a retried action does not create a duplicate.
+
+Every notification has `refs: { ticketId, tripId, routeId }`; ids that don't apply are `null`.
+
+| `type` | Sent when | Filled `refs` |
+|--------|-----------|---------------|
+| `driver_application_approved` | An admin approves the application | none |
+| `driver_application_rejected` | An admin rejects the application; the body includes the reason | none |
+| `trip_completed` | The Driver completes a run; the body includes used tickets and the amount credited | `tripId`, `routeId` |
+| `payout_completed` | A wallet payout is recorded; the body includes the amount | none |
+| `password_changed` | The password is changed or reset | none |
 
 Driver/admin sessions and signup/review require MongoDB transactions. Existing deployments must audit identity readiness and run the additive Driver access migration before enabling these routes:
 
@@ -287,6 +331,33 @@ Keep controllers focused on HTTP and database queries plus public response
 shapes in services. Add new handlers to the role group used by their routes.
 Operational scripts retain their existing paths so documented migration commands
 continue to work.
+
+## Error responses
+
+Every error keeps the usual envelope, and `data.code` is always present. Clients should branch on `data.code` and show `message` (Arabic) to the user. Don't parse `message`, because its wording can change.
+
+```json
+{ "status": "error", "message": "لدى السائق رحلة نشطة بالفعل", "data": { "code": "ACTIVE_TRIP_EXISTS" } }
+```
+
+- **Validation failures** (`400`) return `"code": "VALIDATION_FAILED"` and `"errors": [{ "path": "newPassword", "message": "..." }]`.
+- **Too many attempts** (`429`) return `"code": "TOO_MANY_ATTEMPTS"`, `"retryAfterSeconds"`, and a matching `Retry-After` header.
+- Some errors add extra fields next to `code`; for example, `TICKET_ALREADY_USED` includes `display`.
+- If the service doesn't give a specific code, it comes from the status: `400 BAD_REQUEST`, `401 UNAUTHORIZED`, `403 FORBIDDEN`, `404 NOT_FOUND`, `409 CONFLICT`, `500 INTERNAL_ERROR`, `503 TEMPORARILY_UNAVAILABLE`. A duplicate-key write returns `DUPLICATE`, and a rejected file upload returns `INVALID_UPLOAD`.
+- `500` errors never include internal details.
+
+Specific codes by area:
+
+| Area | Codes |
+|------|-------|
+| Login and sessions | `INVALID_CREDENTIALS`, `INVALID_REFRESH_TOKEN`, `IDENTITY_CONFLICT`, `PHONE_NOT_VERIFIED` |
+| Phone verification | `INVALID_VERIFICATION_CODE`, `PHONE_VERIFICATION_NOT_PENDING` |
+| Password | `INVALID_CURRENT_PASSWORD`, `PASSWORD_UNCHANGED`, `INVALID_RESET_CODE`, `DRIVER_NOT_FOUND` |
+| Applications | `APPLICATION_NOT_FOUND`, `APPLICATION_ALREADY_DECIDED`, `DRIVER_NOT_ELIGIBLE`, `DRIVER_INELIGIBLE` |
+| Routes and runs | `ROUTE_NOT_FOUND`, `ROUTE_ALREADY_EXISTS`, `INVALID_ROUTE_ENDPOINTS`, `TRIP_NOT_FOUND`, `ACTIVE_TRIP_EXISTS`, `TRIP_STATE_CONFLICT`, `OPERATION_KEY_REUSED` |
+| Ticket scan | `INVALID_QR`, `WRONG_ROUTE`, `TICKET_UNAVAILABLE`, `TICKET_ALREADY_USED`, `TICKET_CANCELLED`, `TICKET_EXPIRED`, `VALIDATION_CONFLICT` |
+| Earnings and wallet | `EARNING_CONFLICT`, `EARNING_SOURCE_INCONSISTENT`, `INSUFFICIENT_BALANCE` |
+| Notifications and saved routes | `NOTIFICATION_NOT_FOUND`, `SAVED_ROUTE_NOT_FOUND` |
 
 ## Notes
 

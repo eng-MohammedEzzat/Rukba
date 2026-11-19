@@ -65,6 +65,11 @@ const NOTIFICATION_TYPES = Object.freeze([
   'ticket_used',
   'receipt_issued',
   'system',
+  'driver_application_approved',
+  'driver_application_rejected',
+  'trip_completed',
+  'payout_completed',
+  'password_changed',
 ]);
 
 const ACTION_TYPES = Object.freeze([

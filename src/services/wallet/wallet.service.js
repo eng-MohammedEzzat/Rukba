@@ -6,6 +6,10 @@ const ApiError = require('../../utils/shared/ApiError');
 const { parsePagination, paginationMeta } = require('../../utils/shared/pagination');
 const { runInTransaction } = require('../../utils/shared/runInTransaction');
 const simulatedProvider = require('../../utils/wallet/simulatedProvider');
+const {
+  ensureNotificationCollection,
+  recordPayoutNotification,
+} = require('../shared/notification.service');
 
 const DEFAULT_CURRENCY = 'ILS';
 
@@ -222,9 +226,10 @@ async function topUp(passenger, { amountMinor, provider }) {
 
 async function requestPayout(driver, { amountMinor, provider }) {
   await ensureWalletCollections();
+  await ensureNotificationCollection();
   const result = await runInTransaction(async (session) => {
     const disbursed = simulatedProvider.disburse({ provider, amountMinor });
-    return debit({
+    const debited = await debit({
       userId: driver._id,
       ownerRole: 'driver',
       amountMinor,
@@ -233,6 +238,8 @@ async function requestPayout(driver, { amountMinor, provider }) {
       providerReference: disbursed.providerReference,
       session,
     });
+    await recordPayoutNotification(session, { driverId: driver._id, transaction: debited.transaction });
+    return debited;
   });
   return {
     wallet: toPublicWallet(result.wallet),

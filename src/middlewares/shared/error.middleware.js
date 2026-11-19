@@ -32,11 +32,28 @@ function fieldErrors(details) {
   }));
 }
 
-function errorData(err, statusCode) {
-  const errors = err.isOperational ? fieldErrors(err.details) : null;
-  if (errors) return { errors };
-  if (statusCode === 429 && typeof err.details?.retryAfterSeconds === 'number') {
-    return { retryAfterSeconds: err.details.retryAfterSeconds };
+const STATUS_CODES = Object.freeze({
+  400: 'BAD_REQUEST',
+  401: 'UNAUTHORIZED',
+  403: 'FORBIDDEN',
+  404: 'NOT_FOUND',
+  409: 'CONFLICT',
+  429: 'TOO_MANY_ATTEMPTS',
+  500: 'INTERNAL_ERROR',
+  503: 'TEMPORARILY_UNAVAILABLE',
+});
+
+function isPlainObject(value) {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+/** Operational error details are written for clients (`code`, `field`, `display`, ...). */
+function errorData(err) {
+  if (!err.isOperational) return null;
+  const errors = fieldErrors(err.details);
+  if (errors) return { code: 'VALIDATION_FAILED', errors };
+  if (isPlainObject(err.details) && Object.keys(err.details).length) {
+    return { ...err.details };
   }
   return null;
 }
@@ -60,8 +77,11 @@ function errorHandler(err, _req, res, _next) {
     message = upload;
   }
 
-  const data = errorData(err, statusCode);
-  if (data?.retryAfterSeconds != null) {
+  let data = errorData(err) || {};
+  if (duplicate) data = { code: 'DUPLICATE' };
+  if (upload) data = { code: 'INVALID_UPLOAD' };
+  data = { ...data, code: data.code || STATUS_CODES[statusCode] || 'ERROR' };
+  if (statusCode === 429 && data.retryAfterSeconds != null) {
     res.set('Retry-After', String(data.retryAfterSeconds));
   }
 

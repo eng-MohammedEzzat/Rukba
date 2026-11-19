@@ -115,6 +115,57 @@ async function recordTicketUsedNotification(session, fields) {
   await recordNotifications(session, [ticketUsedNotificationDoc(fields)]);
 }
 
+function formatShekels(amountMinor) {
+  return `${(amountMinor / 100).toFixed(2)} ₪`;
+}
+
+async function recordDriverApplicationDecision(session, { driverId, profileId, outcome, rejectionReason }) {
+  const approved = outcome === 'approved';
+  await recordNotifications(session, [{
+    user: driverId,
+    type: approved ? 'driver_application_approved' : 'driver_application_rejected',
+    title: approved ? 'تم قبول طلبك' : 'تم رفض طلبك',
+    body: approved
+      ? 'تمت الموافقة على حسابك كسائق، يمكنك الآن بدء الرحلات'
+      : `تم رفض طلب انضمامك كسائق. السبب: ${rejectionReason}`,
+    eventKey: `driver_application:${profileId}`,
+  }]);
+}
+
+async function recordTripCompletedNotification(session, { driverId, trip, ticketCount, creditedMinor }) {
+  const credited = creditedMinor > 0 ? ` وأُضيف ${formatShekels(creditedMinor)} إلى محفظتك` : '';
+  await recordNotifications(session, [{
+    user: driverId,
+    type: 'trip_completed',
+    title: 'اكتملت الرحلة',
+    body: `اكتملت رحلة ${trip.routeOrigin} - ${trip.routeDestination} بعدد ${ticketCount} تذكرة${credited}`,
+    eventKey: `trip_completed:${trip._id}`,
+    refs: { ticketId: null, tripId: trip._id, routeId: trip.route },
+  }]);
+}
+
+async function recordPayoutNotification(session, { driverId, transaction }) {
+  await recordNotifications(session, [{
+    user: driverId,
+    type: 'payout_completed',
+    title: 'تم تحويل الأرباح',
+    body: `تم سحب ${formatShekels(transaction.amountMinor)} من محفظتك`,
+    eventKey: `payout:${transaction._id}`,
+  }]);
+}
+
+async function recordPasswordChangedNotification(session, { userId, via, at }) {
+  await recordNotifications(session, [{
+    user: userId,
+    type: 'password_changed',
+    title: 'تم تغيير كلمة المرور',
+    body: via === 'reset'
+      ? 'تمت إعادة تعيين كلمة المرور وتسجيل الخروج من جميع الأجهزة. إن لم تكن أنت، تواصل مع الدعم فورًا'
+      : 'تم تغيير كلمة المرور وتسجيل الخروج من الأجهزة الأخرى. إن لم تكن أنت، تواصل مع الدعم فورًا',
+    eventKey: `password_changed:${userId}:${at.getTime()}`,
+  }]);
+}
+
 async function recordNotifications(session, notificationDocs) {
   try {
     await Notification.create(notificationDocs, {
@@ -153,6 +204,10 @@ module.exports = {
   markNotificationRead,
   recordBookingNotifications,
   recordTicketUsedNotification,
+  recordDriverApplicationDecision,
+  recordTripCompletedNotification,
+  recordPayoutNotification,
+  recordPasswordChangedNotification,
   ensureNotificationCollection,
   toPublicNotification,
 };

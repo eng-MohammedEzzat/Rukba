@@ -16,13 +16,10 @@ const registerSchema = z.object({
 
 const loginSchema = z
   .object({
-    phone: z.string().trim().min(8).max(20).optional(),
-    username: z.string().trim().min(3).max(40).optional(),
+    username: z.string().trim().min(3, 'يرجى إدخال اسم المستخدم').max(40),
     password: z.string().min(1, 'كلمة المرور مطلوبة').max(128),
   })
-  .refine((credentials) => Boolean(credentials.phone || credentials.username), {
-    message: 'يرجى إدخال رقم الهاتف أو اسم المستخدم',
-  });
+  .strict();
 
 const refreshSchema = z.object({
   refreshToken: z.string().min(20, 'رمز التجديد مطلوب'),

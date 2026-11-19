@@ -15,9 +15,22 @@ const {
 const {
   driverRegistrationSchema,
 } = require('../../../validators/auth/driverRegistration.validator');
+const passwordController = require('../../../controllers/auth/password.controller');
+const {
+  changePasswordSchema,
+  resetPasswordSchema,
+  otpResetPasswordSchema,
+} = require('../../../validators/auth/password.validator');
+const phoneVerificationController = require('../../../controllers/auth/phoneVerification.controller');
+const { verifyPhoneCodeSchema } = require('../../../validators/auth/phoneVerification.validator');
 
 const router = Router();
 router.post('/login', validate(roleLoginSchema), authController.loginRole('driver'));
+router.post(
+  '/register/verify-phone',
+  validate(verifyPhoneCodeSchema),
+  phoneVerificationController.verifyPhone('driver')
+);
 router.post(
   '/register',
   uploadUserImageMiddleware,
@@ -32,6 +45,23 @@ router.post(
   requireRole('driver'),
   validate(roleLogoutAllSchema),
   authController.logoutAllRoleSessions('driver')
+);
+router.patch(
+  '/password',
+  authenticate,
+  requireRole('driver'),
+  validate(changePasswordSchema),
+  passwordController.changePassword('driver')
+);
+router.post(
+  '/password/reset',
+  validate(resetPasswordSchema),
+  passwordController.resetPassword('driver')
+);
+router.post(
+  '/password/forgot/reset',
+  validate(otpResetPasswordSchema),
+  passwordController.resetPasswordWithOtp('driver')
 );
 
 module.exports = router;

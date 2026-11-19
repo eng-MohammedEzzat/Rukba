@@ -19,6 +19,11 @@ const {
   completeAttempt,
 } = require('./authThrottle.service');
 const { withRoleFilter } = require('./session.service');
+const {
+  initialPhoneVerified,
+  startPhoneVerification,
+  phoneNotVerifiedError,
+} = require('./phoneVerification.service');
 
 
 
@@ -43,7 +48,7 @@ const issueTokenPair=async  (user, meta)=> {
 }
 
 const registerPassenger = async (input, meta, imageFile)=> {
-  const { phone, username, password, fullName } = input;
+  const { phone, username, password, fullName} = input;
   const normalizedPhone = normalizePhone(phone);
   const usernameNormalized = normalizeUsername(username);
 
@@ -72,6 +77,7 @@ const registerPassenger = async (input, meta, imageFile)=> {
     user = await User.create({
       _id: userId,
       phone: normalizedPhone,
+      phoneVerified: initialPhoneVerified(),
       username,
       usernameNormalized,
       passwordHash,
@@ -87,27 +93,27 @@ const registerPassenger = async (input, meta, imageFile)=> {
     throw err;
   }
 
+  const phoneVerification = await startPhoneVerification(user);
+  if (phoneVerification.required) {
+    return { user: toPublicUser(user), phoneVerification };
+  }
   const tokens = await issueTokenPair(user, meta);
   return {
     user: toPublicUser(user),
+    phoneVerification,
     ...tokens,
   };
 }
 
-const loginPassenger= async ({ phone, username, password }, meta = {})=> {
+const loginPassenger= async ({ username, password }, meta = {})=> {
   const ipKey = `ip:${meta.ip || 'unknown'}`;
   const restrictionKeys = [{ key: ipKey, scope: 'ip' }];
 
   let user = null;
-  if (phone) {
-    user = await User.findOne({ phone: normalizePhone(phone) }).select(
-      '+passwordHash'
-    );
-  } else {
     user = await User.findOne({
       usernameNormalized: normalizeUsername(username),
     }).select('+passwordHash');
-  }
+  
   if (user?.isDeleted) {
     user = null;
   }
@@ -137,6 +143,10 @@ const loginPassenger= async ({ phone, username, password }, meta = {})=> {
 
     if (user.status !== 'active') {
       throw new ApiError(403, 'الحساب غير مفعّل');
+    }
+
+    if (!user.phoneVerified) {
+      throw phoneNotVerifiedError(user);
     }
 
     activePassenger = true;

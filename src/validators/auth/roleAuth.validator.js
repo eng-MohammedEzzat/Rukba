@@ -2,7 +2,6 @@
 
 const { z } = require('../../config/zod');
 
-const phoneSchema = z.string().trim().min(8).max(20);
 const usernameSchema = z
   .string()
   .trim()
@@ -12,14 +11,10 @@ const usernameSchema = z
 
 const roleLoginSchema = z
   .object({
-    phone: phoneSchema.optional(),
-    username: usernameSchema.optional(),
+    username: usernameSchema,
     password: z.string().min(1).max(128),
   })
-  .strict()
-  .refine((credentials) => Boolean(credentials.phone) !== Boolean(credentials.username), {
-    message: 'يرجى إدخال رقم الهاتف أو اسم المستخدم، وليس كليهما.',
-  });
+  .strict();
 
 const roleRefreshSchema = z
   .object({ refreshToken: z.string().min(20).max(1024) })

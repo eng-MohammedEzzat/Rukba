@@ -27,6 +27,14 @@ function parseNonNegativeInt(raw, fallback, name) {
 const DEFAULT_AVATAR =
   'https://res.cloudinary.com/demo/image/upload/w_400,h_400,c_fill,g_auto/sample.jpg';
 
+function parseOtpCode(raw) {
+  const code = raw === undefined ? '111111' : String(raw).trim();
+  if (!/^\d{6}$/.test(code)) {
+    throw new Error('FIXED_OTP_CODE must be exactly 6 digits');
+  }
+  return code;
+}
+
 const nodeEnv = process.env.NODE_ENV || 'development';
 
 const env = Object.freeze({
@@ -90,6 +98,9 @@ const env = Object.freeze({
     0,
     'WALLET_INITIAL_BALANCE_MINOR'
   ),
+  phoneVerificationEnabled:
+    String(process.env.PHONE_VERIFICATION_ENABLED || 'true').toLowerCase() === 'true',
+  fixedOtpCode: parseOtpCode(process.env.FIXED_OTP_CODE),
 });
 
 module.exports = env;

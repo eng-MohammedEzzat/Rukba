@@ -17,6 +17,16 @@ const deviceTokenSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const passwordResetSchema = new mongoose.Schema(
+  {
+    codeHash: { type: String, required: true },
+    expiresAt: { type: Date, required: true },
+    attempts: { type: Number, default: 0, min: 0 },
+    issuedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  },
+  { _id: false }
+);
+
 const imageSchema = new mongoose.Schema(
   {
     url: {
@@ -40,6 +50,11 @@ const userSchema = new mongoose.Schema(
       required: true,
       unique: true,
       trim: true,
+    },
+    // Self-registration sets this to false until the phone OTP is confirmed; other accounts default to verified.
+    phoneVerified: {
+      type: Boolean,
+      default: true,
     },
     username: {
       type: String,
@@ -94,6 +109,11 @@ const userSchema = new mongoose.Schema(
       min: 0,
       default: 0,
       validate: Number.isInteger,
+      select: false,
+    },
+    passwordReset: {
+      type: passwordResetSchema,
+      default: null,
       select: false,
     },
   },

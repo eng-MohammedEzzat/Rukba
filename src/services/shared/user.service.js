@@ -90,6 +90,7 @@ function toPublicUser(user) {
   return {
     id: user._id,
     phone: user.phone,
+    phoneVerified: user.phoneVerified,
     username: user.username,
     fullName: user.fullName,
     role: user.role,
@@ -104,6 +105,7 @@ function toUserSummary(user) {
   return {
     id: String(user._id),
     phone: user.phone,
+    phoneVerified: user.phoneVerified,
     username: user.username,
     fullName: user.fullName,
     role: user.role,

@@ -11,7 +11,6 @@ coverage/
 dist/
 build/
 tests/.auth-e2e-state.json
-tests/.sms-fake-outbox.jsonl
 test-results/
 playwright-report/
 blob-report/
@@ -22,3 +21,5 @@ tests/
 .cursor/
 .agents/
 docs/
+figma/
+figma-plugins/

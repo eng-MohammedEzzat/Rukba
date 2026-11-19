@@ -4,6 +4,10 @@ const { User, DriverProfile } = require('../../models');
 const roleApiError = require('../../utils/auth/roleApiError');
 const { toUserSummary } = require('../shared/user.service');
 const { runInTransaction } = require('../../utils/shared/runInTransaction');
+const {
+  ensureNotificationCollection,
+  recordDriverApplicationDecision,
+} = require('../shared/notification.service');
 
 const SNAPSHOT_QUERY = {
   'submission.phone': { $type: 'string', $ne: '' },
@@ -121,6 +125,7 @@ async function decideApplication(applicationId, reviewerId, decision) {
   const reviewedAt = new Date();
   let application;
   let currentDecision = false;
+  await ensureNotificationCollection();
   await runInTransaction(async (session) => {
       if (!(await incrementAccountGuard(reviewerId, 'admin', session, true))) {
         throw roleApiError(401, 'حساب المسؤول الحالي غير متاح.', 'INVALID_CREDENTIALS');
@@ -159,6 +164,12 @@ async function decideApplication(applicationId, reviewerId, decision) {
         application = toAdminDriverApplication(current.user, current.profile);
         return;
       }
+      await recordDriverApplicationDecision(session, {
+        driverId: records.user._id,
+        profileId: profile._id,
+        outcome: profile.decision.outcome,
+        rejectionReason: profile.decision.rejectionReason,
+      });
       application = toAdminDriverApplication(records.user, profile);
   });
   if (currentDecision) {

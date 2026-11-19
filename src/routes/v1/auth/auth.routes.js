@@ -12,8 +12,23 @@ const {
   refreshSchema,
   logoutSchema,
 } = require('../../../validators/auth/auth.validator');
+const phoneVerificationController = require('../../../controllers/auth/phoneVerification.controller');
+const passwordController = require('../../../controllers/auth/password.controller');
+const { verifyPhoneCodeSchema } = require('../../../validators/auth/phoneVerification.validator');
+const { otpResetPasswordSchema } = require('../../../validators/auth/password.validator');
 
 const router = Router();
+
+router.post(
+  '/register/verify-phone',
+  validate(verifyPhoneCodeSchema),
+  phoneVerificationController.verifyPhone('passenger')
+);
+router.post(
+  '/password/forgot/reset',
+  validate(otpResetPasswordSchema),
+  passwordController.resetPasswordWithOtp('passenger')
+);
 
 router.post(
   '/register',
